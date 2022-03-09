@@ -1,0 +1,36 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm' version '1.6.10'
+    id 'java'
+    id 'application'
+    id 'com.github.johnrengelman.shadow' version '7.0.0'
+}
+
+group 'at.xirado'
+version '1.0.0'
+
+compileJava.options.encoding = 'UTF-8'
+
+mainClassName = 'at.xirado.tuner.Application'
+
+repositories {
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+    jcenter()
+}
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib"
+    implementation "com.github.Xirado:JDA:36eea2a"
+    implementation "ch.qos.logback:logback-classic:1.3.0-alpha5"
+    implementation "io.github.classgraph:classgraph:4.8.141"
+    implementation 'org.fusesource.jansi:jansi:2.4.0'
+    implementation 'org.jline:jline:3.21.0'
+    implementation "club.minnced:discord-webhooks:0.7.5"
+    implementation 'com.github.Xirado:Lavalink-Client:041082f'
+}
+
+compileKotlin {
+    kotlinOptions {
+        jvmTarget = "16"
+    }
+}
