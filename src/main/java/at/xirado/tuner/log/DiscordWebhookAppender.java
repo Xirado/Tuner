@@ -17,16 +17,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class DiscordWebhookAppender extends UnsynchronizedAppenderBase<ILoggingEvent> {
 
-    private boolean isActive;
-
-    private final List<String> pendingMessages = new ArrayList<>();
-    private final ReentrantLock webhookLock = new ReentrantLock();
-    private final int emptyLength = getWebhookMessageLength(Collections.emptyList());
-    private final Thread webhookThread;
-    private final Application application = Application.getApplication();
-
     private static final Logger LOG = LoggerFactory.getLogger(Application.class);
-
     private static final String GREY = "\u001B[30m";
     private static final String RED = "\u001B[31m";
     private static final String YELLOW = "\u001B[33m";
@@ -34,10 +25,29 @@ public class DiscordWebhookAppender extends UnsynchronizedAppenderBase<ILoggingE
     private static final String WHITE = "\u001B[37m";
     private static final String RESET = "\u001B[0m";
 
-    public DiscordWebhookAppender() throws InterruptedException {
-        isActive = true;
+    private boolean active;
+    private Application application;
 
+    private final List<String> pendingMessages = new ArrayList<>();
+    private final ReentrantLock webhookLock = new ReentrantLock();
+    private final int emptyLength = getWebhookMessageLength(Collections.emptyList());
+    private final Thread webhookThread;
+
+    public DiscordWebhookAppender() {
         webhookThread = new Thread(() -> {
+            while (Application.getApplication() == null || Application.getApplication().getTunerConfiguration() == null) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException ignored) {}
+            }
+            if (!active) {
+                application = Application.getApplication();
+                if (application.getTunerConfiguration().getWebhookClient() == null) {
+                    LOG.warn("Disabling Discord Webhook Appender because no url has been specified!");
+                    return;
+                }
+                active = true;
+            }
             int state = 0;
             long waitingTime = 0;
             while (true) {
@@ -71,14 +81,13 @@ public class DiscordWebhookAppender extends UnsynchronizedAppenderBase<ILoggingE
 
     @Override
     protected void append(ILoggingEvent event) {
-        if (!isActive)
+        if (!active)
             return;
 
         webhookLock.lock();
         pendingMessages.add(formatted(event));
         webhookLock.unlock();
     }
-
 
     private String formatted(ILoggingEvent event) {
         String formattedMessage = event.getFormattedMessage();

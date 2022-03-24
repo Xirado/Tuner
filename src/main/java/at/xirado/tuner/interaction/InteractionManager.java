@@ -8,6 +8,7 @@ import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.GuildChannel;
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.GenericCommandInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.requests.restaction.CommandListUpdateAction;
@@ -21,6 +22,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class InteractionManager {
+
+    public static final int AUTOCOMPLETE_MAX_CHOICES = 25;
 
     private static final Logger LOG = LoggerFactory.getLogger(InteractionManager.class);
     private static final String commandsPackage = "at.xirado.tuner.interaction.commands";
@@ -66,15 +69,14 @@ public class InteractionManager {
         return perms;
     }
 
-
-    public void handleInteraction(GenericCommandInteractionEvent event) {
+    public void handleCommand(GenericCommandInteractionEvent event) {
         Guild guild = event.getGuild();
         long guildId = guild.getIdLong();
 
         GenericCommand command = getGenericCommand(guildId, event.getName(), event.getCommandType().getId());
 
         if (command == null)
-            getGenericCommand(event.getName(), event.getCommandType().getId());
+            command = getGenericCommand(event.getName(), event.getCommandType().getId());
 
         if (command == null)
             return;
@@ -97,12 +99,39 @@ public class InteractionManager {
             return;
         }
 
-        if (command.getType() == CommandType.SLASH_COMMAND) {
-            var slashEvent = (SlashCommandInteractionEvent) event;
-            var slashCommand = (SlashCommand) command;
-
-            slashCommand.execute(slashEvent);
+        if (command.hasCommandFlag(CommandFlag.VOICE_CHANNEL_ONLY)) {
+            var voiceState = member.getVoiceState();
+            if (!voiceState.inAudioChannel()) {
+                event.reply("You must be in a voice-channel to use this command!").queue();
+                return;
+            }
         }
+
+        if (command.hasCommandFlag(CommandFlag.SAME_VOICE_CHANNEL_ONLY)) {
+            var botVoiceState = event.getGuild().getSelfMember().getVoiceState();
+            var memberVoiceState = member.getVoiceState();
+            if (!memberVoiceState.inAudioChannel()) {
+
+            }
+        }
+
+        switch (command.getType()) {
+            case SLASH_COMMAND -> {
+                var slashEvent = (SlashCommandInteractionEvent) event;
+                var slashCommand = (SlashCommand) command;
+
+                slashCommand.execute(slashEvent);
+            }
+        }
+    }
+
+    public void handleAutocomplete(CommandAutoCompleteInteractionEvent event) {
+        SlashCommand slashCommand = (SlashCommand) getGenericCommand(event.getGuild().getIdLong(), event.getName(), CommandType.SLASH_COMMAND.getId());
+        if (slashCommand == null)
+            slashCommand = (SlashCommand) getGenericCommand(event.getName(), CommandType.SLASH_COMMAND.getId());
+        if (slashCommand == null)
+            return;
+        slashCommand.onAutocomplete(event);
     }
 
     private void registerCommands() {

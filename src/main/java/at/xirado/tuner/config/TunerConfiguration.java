@@ -21,6 +21,8 @@ public class TunerConfiguration {
     private final boolean devMode;
     private final Set<Long> devGuilds;
     private final WebhookClient webhookClient;
+    private final String innertubeApiKey;
+    private final String innertubeRequestBody;
 
     public TunerConfiguration(DataObject object) {
         this.object = object;
@@ -38,6 +40,8 @@ public class TunerConfiguration {
         }
 
         this.webhookClient = object.isNull("webhook_url") ? null : new WebhookClientBuilder(object.getString("webhook_url")).build();
+        this.innertubeApiKey = object.getString("innertube_api_key", null);
+        this.innertubeRequestBody = object.isNull("innertube_request_body") ? null : object.getObject("innertube_request_body").toString();
     }
 
     public DataObject getObject() {
@@ -58,5 +62,13 @@ public class TunerConfiguration {
 
     public WebhookClient getWebhookClient() {
         return webhookClient;
+    }
+
+    public String getInnertubeApiKey() {
+        return innertubeApiKey;
+    }
+
+    public String getInnertubeRequestBody() {
+        return innertubeRequestBody;
     }
 }

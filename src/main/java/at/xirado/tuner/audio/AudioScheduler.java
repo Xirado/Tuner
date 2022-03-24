@@ -1,20 +1,18 @@
 package at.xirado.tuner.audio;
 
 import at.xirado.tuner.Application;
+import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
+import com.sedmelluq.discord.lavaplayer.player.event.AudioEventAdapter;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
-import lavalink.client.player.IPlayer;
-import lavalink.client.player.LavalinkPlayer;
-import lavalink.client.player.event.PlayerEventListenerAdapter;
-import net.dv8tion.jda.api.entities.AudioChannel;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
-public class AudioScheduler extends PlayerEventListenerAdapter {
+public class AudioScheduler extends AudioEventAdapter {
 
     private final Application application;
-    private final LavalinkPlayer player;
+    private final AudioPlayer player;
     private final BlockingQueue<AudioTrack> queue;
     private final GuildPlayer guildPlayer;
     private final long guildId;
@@ -22,7 +20,7 @@ public class AudioScheduler extends PlayerEventListenerAdapter {
     private boolean shuffle = false;
     private AudioTrack lastTrack;
 
-    public AudioScheduler(Application application, LavalinkPlayer player, long guildId, GuildPlayer guildPlayer) {
+    public AudioScheduler(Application application, AudioPlayer player, long guildId, GuildPlayer guildPlayer) {
         this.application = application;
         this.guildId = guildId;
         this.player = player;
@@ -69,28 +67,14 @@ public class AudioScheduler extends PlayerEventListenerAdapter {
         return queue;
     }
 
-    public LavalinkPlayer getPlayer() {
+    public AudioPlayer getPlayer() {
         return player;
     }
 
     @Override
-    public void onTrackStart(IPlayer player, AudioTrack track) {
-        lastTrack = track;
-        AudioChannel current = application.getShardManager().getGuildById(guildId).getSelfMember().getVoiceState().getChannel();
-    }
-
-    @Override
-    public void onTrackEnd(IPlayer player, AudioTrack track, AudioTrackEndReason endReason) {
+    public void onTrackEnd(AudioPlayer player, AudioTrack track, AudioTrackEndReason endReason) {
         if (endReason.mayStartNext)
             nextTrack();
-    }
-
-    @Override
-    public void onTrackException(IPlayer player, AudioTrack track, Exception exception) {
-        if (repeat)
-            repeat = false;
-
-        nextTrack();
     }
 
     public long getGuildId() {

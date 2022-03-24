@@ -21,6 +21,5 @@ public class TestCommand extends SlashCommand {
 
     @Override
     public void execute(@NotNull SlashCommandInteractionEvent event) {
-        event.reply(event.getOption("whatever", "Nothing provided", OptionMapping::getAsString)).queue();
     }
 }

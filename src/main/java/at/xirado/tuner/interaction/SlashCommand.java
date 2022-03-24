@@ -3,6 +3,7 @@ package at.xirado.tuner.interaction;
 
 import at.xirado.tuner.Application;
 import net.dv8tion.jda.api.Permission;
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
@@ -19,12 +20,14 @@ public abstract class SlashCommand implements GenericCommand {
     private final EnumSet<Permission> requiredUserPermissions;
     private final EnumSet<Permission> requiredBotPermissions;
     private final Set<Long> enabledGuilds;
+    private final EnumSet<CommandFlag> commandFlags;
 
     public SlashCommand(SlashCommandData commandData) {
         this.commandData = commandData;
         this.requiredUserPermissions = EnumSet.noneOf(Permission.class);
         this.requiredBotPermissions = EnumSet.noneOf(Permission.class);
         this.enabledGuilds = new HashSet<>();
+        this.commandFlags = EnumSet.noneOf(CommandFlag.class);
     }
 
     @Override
@@ -99,4 +102,23 @@ public abstract class SlashCommand implements GenericCommand {
     }
 
     public abstract void execute(@NotNull SlashCommandInteractionEvent event);
+
+    public void onAutocomplete(@NotNull CommandAutoCompleteInteractionEvent event) {}
+
+    @Override
+    public void addCommandFlags(CommandFlag... commandFlags) {
+        Checks.noneNull(commandFlags, "CommandFlags");
+        this.commandFlags.addAll(List.of(commandFlags));
+    }
+
+    @Override
+    public @NotNull EnumSet<CommandFlag> getCommandFlags() {
+        return EnumSet.copyOf(this.commandFlags);
+    }
+
+    @Override
+    public boolean hasCommandFlag(CommandFlag commandFlag) {
+        Checks.notNull(commandFlag, "CommandFlag");
+        return this.commandFlags.contains(commandFlag);
+    }
 }

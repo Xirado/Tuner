@@ -93,4 +93,24 @@ public interface GenericCommand {
      * @param application Main application
      */
     void setApplication(@NotNull  Application application);
+
+    /**
+     * Gets the {@link CommandFlag CommandFlags} of this command.
+     * @return {@link EnumSet EnumSet} of CommandFlags this command contains.
+     */
+    @NotNull
+    EnumSet<CommandFlag> getCommandFlags();
+
+    /**
+     * Adds {@link CommandFlag CommandFlags} to this command.
+     * @param commandFlags
+     */
+    void addCommandFlags(CommandFlag... commandFlags);
+
+    /**
+     * Whether this command has the specified CommandFlag.
+     * @param commandFlag The CommandFlag to check for
+     * @return True if this command contains this CommandFlag.
+     */
+    boolean hasCommandFlag(CommandFlag commandFlag);
 }
