@@ -1,4 +1,4 @@
-package at.xirado.youtube;
+package at.xirado.tuner.youtube;
 
 import at.xirado.tuner.Application;
 import net.dv8tion.jda.api.utils.data.DataArray;
