@@ -1,3 +1,19 @@
+/*
+ * Copyright 2022 Marcel Korzonek and the Tuner contributors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package at.xirado.tuner.interaction;
 
 import at.xirado.tuner.Application;
@@ -55,7 +71,7 @@ public class InteractionManager {
                 .stream()
                 .filter(command -> command.getCommandData().getName().equalsIgnoreCase(name) && command.getType().getId() == type)
                 .findFirst()
-                .orElse(null);
+                .orElse(getGenericCommand(name, type));
     }
 
     private EnumSet<Permission> getMissingPermissions(Member member, GuildChannel channel, EnumSet<Permission> requiredPerms) {
@@ -76,9 +92,6 @@ public class InteractionManager {
         GenericCommand command = getGenericCommand(guildId, event.getName(), event.getCommandType().getId());
 
         if (command == null)
-            command = getGenericCommand(event.getName(), event.getCommandType().getId());
-
-        if (command == null)
             return;
 
         Member member = event.getMember();
@@ -86,32 +99,36 @@ public class InteractionManager {
         var missingPermissions = getMissingPermissions(member, event.getGuildChannel(), command.getRequiredUserPermissions());
 
         if (!missingPermissions.isEmpty()) {
-            var missingPermsString = missingPermissions.stream().map(Enum::toString).collect(Collectors.joining(", "));
-            event.reply("You cannot execute this command because you are missing the following permission" + (missingPermissions.size() == 1 ? "" : "s") + ": `" + missingPermsString + "`").queue();
+            var missingPermsString = missingPermissions.stream().map(perm -> "`" + perm + "`").collect(Collectors.joining(", "));
+            event.reply("You cannot execute this command because you are missing the following permission" + (missingPermissions.size() == 1 ? "" : "s") + ":\n" + missingPermsString).setEphemeral(true).queue();
             return;
         }
 
         var missingBotPermissions = getMissingPermissions(event.getGuild().getSelfMember(), event.getGuildChannel(), command.getRequiredBotPermissions());
 
         if (!missingBotPermissions.isEmpty()) {
-            var missingPermsString = missingBotPermissions.stream().map(Enum::toString).collect(Collectors.joining(", "));
-            event.reply("You cannot execute this command because i am missing the following permission" + (missingBotPermissions.size() == 1 ? "" : "s") + ": `" + missingPermsString + "`").queue();
+            var missingPermsString = missingBotPermissions.stream().map(perm -> "`" + perm + "`").collect(Collectors.joining(", "));
+            event.reply("You cannot execute this command because i am missing the following permission" + (missingBotPermissions.size() == 1 ? "" : "s") + ":\n" + missingPermsString).setEphemeral(true).queue();
             return;
         }
 
         if (command.hasCommandFlag(CommandFlag.VOICE_CHANNEL_ONLY)) {
             var voiceState = member.getVoiceState();
             if (!voiceState.inAudioChannel()) {
-                event.reply("You must be in a voice-channel to use this command!").queue();
+                event.reply("You must be in a voice-channel to use this command!").setEphemeral(true).queue();
                 return;
             }
         }
 
+        // This only has an effect if the bot already is in a channel
         if (command.hasCommandFlag(CommandFlag.SAME_VOICE_CHANNEL_ONLY)) {
             var botVoiceState = event.getGuild().getSelfMember().getVoiceState();
             var memberVoiceState = member.getVoiceState();
-            if (!memberVoiceState.inAudioChannel()) {
-
+            if (botVoiceState.inAudioChannel()) {
+                if (!botVoiceState.getChannel().equals(memberVoiceState.getChannel())) {
+                    event.reply("You must be listening in " + botVoiceState.getChannel().getAsMention() + " to do this!").setEphemeral(true).queue();
+                    return;
+                }
             }
         }
 
@@ -126,12 +143,19 @@ public class InteractionManager {
     }
 
     public void handleAutocomplete(CommandAutoCompleteInteractionEvent event) {
-        SlashCommand slashCommand = (SlashCommand) getGenericCommand(event.getGuild().getIdLong(), event.getName(), CommandType.SLASH_COMMAND.getId());
-        if (slashCommand == null)
-            slashCommand = (SlashCommand) getGenericCommand(event.getName(), CommandType.SLASH_COMMAND.getId());
-        if (slashCommand == null)
+        SlashCommand command = (SlashCommand) getGenericCommand(event.getGuild().getIdLong(), event.getName(), CommandType.SLASH_COMMAND.getId());
+
+        if (command == null)
             return;
-        slashCommand.onAutocomplete(event);
+
+        Member member = event.getMember();
+
+        var missingPermissions = getMissingPermissions(member, event.getGuildChannel(), command.getRequiredUserPermissions());
+
+        if (!missingPermissions.isEmpty())
+            return;
+
+        command.onAutocomplete(event);
     }
 
     private void registerCommands() {
@@ -140,7 +164,6 @@ public class InteractionManager {
         registerCommandsOfClass(SlashCommand.class, updateAction);
 
         updateAction.queue();
-        updateGuildCommands();
     }
 
     private void registerCommand(@NotNull CommandListUpdateAction action, @NotNull GenericCommand command) {
@@ -171,18 +194,16 @@ public class InteractionManager {
         guildCommands.put(guildId, enabledCommands);
     }
 
-    private void updateGuildCommands() {
-        var guilds = guildCommands.keySet();
-        guilds.forEach(guildId -> {
-            Guild guild = application.getShardManager().getGuildById(guildId);
-            if (guild == null)
-                return;
+    public void updateGuildCommands(Guild guild) {
+        long guildId = guild.getIdLong();
 
-            CommandListUpdateAction action = guild.updateCommands();
-            var commands = guildCommands.get(guildId);
-            commands.forEach(command -> action.addCommands(command.getCommandData()));
-            action.queue();
-        });
+        if (!guildCommands.containsKey(guildId) || guildCommands.get(guildId).isEmpty())
+            return;
+
+        var updateAction = guild.updateCommands();
+        var commands = guildCommands.get(guildId);
+        commands.forEach(command -> updateAction.addCommands(command.getCommandData()));
+        updateAction.queue(discordCommands -> discordCommands.forEach(command -> LOG.debug("Registered command {} on guild {}", command.getName(), guildId)));
     }
 
     private void registerCommandsOfClass(Class<? extends GenericCommand> clazz, CommandListUpdateAction action) {
@@ -190,8 +211,13 @@ public class InteractionManager {
         rs.getSubclasses(clazz).loadClasses().forEach(loadedClazz -> {
             try {
                 registerCommand(action, (GenericCommand) loadedClazz.getDeclaredConstructor().newInstance());
+                LOG.debug("Found interaction-command {}", loadedClazz.getName());
             } catch (Exception ignored) {}
         });
         rs.close();
+    }
+
+    public Map<Long, List<GenericCommand>> getGuildCommands() {
+        return Collections.unmodifiableMap(guildCommands);
     }
 }

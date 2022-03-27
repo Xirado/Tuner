@@ -1,0 +1,55 @@
+############################################################################
+# Copyright 2022 Marcel Korzonek and the Tuner contributors                #
+#                                                                          #
+# Licensed under the Apache License, Version 2.0 (the "License");          #
+# you may not use this file except in compliance with the License.         #
+# You may obtain a copy of the License at                                  #
+#                                                                          #
+#    http://www.apache.org/licenses/LICENSE-2.0                            #
+#                                                                          #
+# Unless required by applicable law or agreed to in writing, software      #
+# distributed under the License is distributed on an "AS IS" BASIS,        #
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. #
+# See the License for the specific language governing permissions and      #
+# limitations under the License.                                           #
+############################################################################
+
+###################################################################
+# Note: Slash commands take upto an hour to update. If you're     #
+# testing stuff, enable "dev_mode" and add the id of your         #
+# testing guild in "dev_guilds"! Doing this will only register    #
+# each command in that guild, which will be instant. Discord only #
+# updates the global command cache every hour.                    #
+###################################################################
+
+# Tuner configuration
+
+discord_token: "" # Your Discord bot token goes here
+dev_mode: false # Set this to true if you want to test commands
+dev_guilds: [] # Add your testing guild id(s) here, only has an effect if dev_mode is true
+webhook_url: "" # Add a discord webhook url here if you want logs to be sent to a discord channel
+
+youtube:
+  # Required if you want to receive search suggestions when you type /play
+  # Go to youtube music, open dev tools (F12), go to network tab, and write something in the search bar
+  # Find the Request that starts with "get_search_suggestions"
+
+  # get_search_suggestions -> Headers -> General -> Request Url
+  # (Don't include the "&prettyPrint" part, that's the next query parameter)
+  innertube_api_key: "" # "key" query parameter
+
+  # IMPORTANT: You also need the JSON request payload from the same request.
+  # Copy the json into the file mentioned below (You need to manually create it)
+
+  # get_search_suggestions -> Payload -> Request Payload -> view source
+  innertube_request_body_location: "innertube_request_body.json"
+
+  # Required if you want to listen to age restricted videos. Tutorial here: https://github.com/Walkyst/lavaplayer-fork/issues/18
+  innertube_papisid: ""
+  innertube_psid: ""
+
+# Required if you want to play spotify tracks/playlists/albums
+# See https://developer.spotify.com/dashboard/applications
+spotify:
+  client_id: ""
+  client_secret: ""

@@ -14,10 +14,23 @@
  * limitations under the License.
  */
 
-package at.xirado.tuner.interaction;
+package at.xirado.tuner.exception;
 
-public enum CommandFlag {
+public class DatabaseException extends RuntimeException{
 
-    VOICE_CHANNEL_ONLY(),
-    SAME_VOICE_CHANNEL_ONLY()
+    public DatabaseException() {
+        super();
+    }
+
+    public DatabaseException(String message) {
+        super(message);
+    }
+
+    public DatabaseException(Throwable throwable) {
+        super(throwable);
+    }
+
+    public DatabaseException(String message, Throwable throwable) {
+        super(message, throwable);
+    }
 }

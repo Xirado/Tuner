@@ -8,7 +8,11 @@
         </encoder>
     </appender>
 
-    <appender name="Discord" class="at.xirado.tuner.log.DiscordWebhookAppender"/>
+    <appender name="Discord" class="at.xirado.tuner.log.DiscordWebhookAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+    </appender>
 
     <root level="info">
         <appender-ref ref="STDOUT" />
