@@ -29,7 +29,8 @@ class DiscordWebhookAppender : AppenderBase<ILoggingEvent>() {
         val emptyLength = getWebhookMessageLength(listOf())
 
         fun init(application: Application) {
-            client = application.tunerConfig.webhookClient
+            if (application.tunerConfig.webhookClient == null)
+                return
             application.coroutineScope.launch {
                 var state = 0
                 var waitingTime = 0L
