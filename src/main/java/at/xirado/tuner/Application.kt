@@ -5,6 +5,7 @@ import at.xirado.tuner.config.ConfigLoader
 import at.xirado.tuner.config.TunerConfiguration
 import at.xirado.tuner.interaction.InteractionHandler
 import at.xirado.tuner.listener.InteractionListener
+import at.xirado.tuner.listener.ReadyListener
 import at.xirado.tuner.log.DiscordWebhookAppender
 import at.xirado.tuner.util.Util
 import ch.qos.logback.classic.Level
@@ -49,7 +50,7 @@ class Application {
             .setActivity(Activity.listening("music"))
             .disableCache(CacheFlag.EMOTE)
             .setAudioSendFactory(NativeAudioSendFactory())
-            .addEventListeners(InteractionListener(this))
+            .addEventListeners(InteractionListener(this), ReadyListener(this))
             .build()
 
         interactionHandler = InteractionHandler(this)

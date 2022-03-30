@@ -29,7 +29,7 @@ compileJava.options.encoding = 'UTF-8'
 sourceCompatibility = 16
 targetCompatibility = 16
 
-mainClassName = 'at.xirado.tuner.Application'
+mainClassName = 'at.xirado.tuner.Main'
 
 repositories {
     maven {
@@ -55,6 +55,7 @@ dependencies {
     implementation 'org.xerial:sqlite-jdbc:3.36.0.3'
     implementation 'com.github.Topis-Lavalink-Plugins:Topis-Source-Managers:2.0.1'
     implementation 'net.jodah:expiringmap:0.5.10'
+    implementation("com.github.minndevelopment:jda-ktx:9f01b74")
 }
 
 compileKotlin {
