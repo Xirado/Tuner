@@ -17,7 +17,6 @@
 package at.xirado.tuner.config;
 
 import at.xirado.tuner.Application;
-import io.github.getify.minify.Minify;
 import net.dv8tion.jda.api.utils.data.DataObject;
 import org.apache.commons.io.IOUtils;
 import org.jetbrains.annotations.NotNull;
@@ -80,7 +79,7 @@ public class ConfigLoader {
             Files.copy(inputStream, path);
         }
 
-        return DataObject.fromJson(Minify.minify(IOUtils.toString(new FileInputStream(file), StandardCharsets.UTF_8)));
+        return DataObject.fromJson(IOUtils.toString(new FileInputStream(file), StandardCharsets.UTF_8));
     }
 
     /**
