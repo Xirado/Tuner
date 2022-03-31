@@ -16,6 +16,7 @@
 
 package at.xirado.tuner.interaction.commands.slash
 
+import at.xirado.tuner.interaction.CommandFlag
 import at.xirado.tuner.interaction.SlashCommand
 import at.xirado.tuner.util.getYoutubeMusicSearchResults
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler
@@ -46,8 +47,7 @@ class PlayCommand : SlashCommand("play", "plays something") {
             Command.Choice("Soundcloud", "scsearch:")
         ))
 
-        addRequiredUserPermissions(Permission.ADMINISTRATOR)
-        addRequiredBotPermissions(Permission.ADMINISTRATOR)
+        addCommandFlags(CommandFlag.SAME_VOICE_CHANNEL_ONLY, CommandFlag.VOICE_CHANNEL_ONLY)
     }
 
     override suspend fun execute(event: SlashCommandInteractionEvent) {

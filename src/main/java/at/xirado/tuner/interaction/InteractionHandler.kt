@@ -41,7 +41,8 @@ class InteractionHandler(val application: Application) {
         val AUTOCOMPLETE_MAX_CHOICES = 25
 
         private val log = LoggerFactory.getLogger(InteractionHandler::class.java) as Logger
-        private val commandsPackage = "at.xirado.tuner.interaction.commands"
+
+        private const val commandsPackage = "at.xirado.tuner.interaction.commands"
     }
 
     private val globalCommands: MutableList<GenericCommand> = Collections.synchronizedList(mutableListOf())
@@ -49,16 +50,6 @@ class InteractionHandler(val application: Application) {
 
     fun init() {
         registerCommands()
-    }
-
-    private fun getMissingPermissions(member: Member, channel: GuildChannel, requiredPerms: EnumSet<Permission>) : EnumSet<Permission> {
-        val perms = EnumSet.noneOf(Permission::class.java)
-
-        for (permission in requiredPerms) {
-            if (!member.hasPermission(channel, permission))
-                perms.add(permission)
-        }
-        return perms
     }
 
     suspend fun handleAutocomplete(event: CommandAutoCompleteInteractionEvent) {
@@ -97,6 +88,25 @@ class InteractionHandler(val application: Application) {
             event.reply(":x: I am missing the following ${if (singular) "permission" else "permissions"}:\n$parsed").await()
             log.debug("Refusing execution of command ${command.commandData.name} (Type=${command.type}, Guild=${guild.idLong}, User=${member.idLong}, Channel=${event.guildChannel.idLong}): Bot Missing permissions $missingBotPerms")
             return
+        }
+
+        if (CommandFlag.VOICE_CHANNEL_ONLY in command.commandFlags) {
+            val voiceState = member.voiceState!!
+            if (voiceState.channel == null) {
+                event.reply("You must be listening in a voice-channel to use this command!").await()
+                return
+            }
+        }
+
+        if (CommandFlag.SAME_VOICE_CHANNEL_ONLY in command.commandFlags) {
+            val userVoiceState = member.voiceState!!
+            val botVoiceState = guild.selfMember.voiceState!!
+            if (botVoiceState.channel != null) {
+                if (userVoiceState.channel != botVoiceState.channel) {
+                    event.reply("You must be listening in ${botVoiceState.channel!!.asMention} to use this command!").await()
+                    return
+                }
+            }
         }
 
         when (command) {
@@ -188,5 +198,15 @@ class InteractionHandler(val application: Application) {
             .filter { it.commandData.name.equals(name, true) && it.type.id == type }
             .findFirst()
             .orElse(getGenericCommand(name, type))
+    }
+
+    private fun getMissingPermissions(member: Member, channel: GuildChannel, requiredPerms: EnumSet<Permission>) : EnumSet<Permission> {
+        val perms = EnumSet.noneOf(Permission::class.java)
+
+        for (permission in requiredPerms) {
+            if (!member.hasPermission(channel, permission))
+                perms.add(permission)
+        }
+        return perms
     }
 }
