@@ -32,7 +32,7 @@ import java.nio.file.Paths;
 import java.security.CodeSource;
 
 /**
- * Utility class to load json files (or copy existing ones from the resource folder)
+ * Utility class to load json or yaml files (or copy existing ones from the resource folder)
  */
 public class ConfigLoader {
 

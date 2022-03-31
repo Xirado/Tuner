@@ -17,12 +17,15 @@
 package at.xirado.tuner.interaction
 
 import at.xirado.tuner.Application
-import at.xirado.tuner.application
+import dev.minn.jda.ktx.await
 import io.github.classgraph.ClassGraph
+import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.GuildChannel
+import net.dv8tion.jda.api.entities.Member
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.GenericCommandInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
-import net.dv8tion.jda.api.interactions.commands.Command
 import net.dv8tion.jda.api.requests.restaction.CommandListUpdateAction
 import net.dv8tion.jda.internal.utils.Checks
 import org.slf4j.Logger
@@ -30,8 +33,9 @@ import org.slf4j.LoggerFactory
 import java.lang.Exception
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
+import java.util.stream.Collectors
 
-class InteractionHandler(application: Application) {
+class InteractionHandler(val application: Application) {
 
     companion object {
         val AUTOCOMPLETE_MAX_CHOICES = 25
@@ -47,20 +51,58 @@ class InteractionHandler(application: Application) {
         registerCommands()
     }
 
-    suspend fun handleCommand(event: GenericCommandInteractionEvent) {
+    private fun getMissingPermissions(member: Member, channel: GuildChannel, requiredPerms: EnumSet<Permission>) : EnumSet<Permission> {
+        val perms = EnumSet.noneOf(Permission::class.java)
+
+        for (permission in requiredPerms) {
+            if (!member.hasPermission(channel, permission))
+                perms.add(permission)
+        }
+        return perms
+    }
+
+    suspend fun handleAutocomplete(event: CommandAutoCompleteInteractionEvent) {
         val guild = event.guild!!
-
         val guildId = guild.idLong
-
         val command = getGenericCommand(guildId, event.name, event.commandType.id)?: return
 
-        val member = event.member
+        when (command) {
+            is SlashCommand -> {
+                command.onAutoComplete(event)
+            }
+        }
+    }
 
-        when (command.type) {
-            Command.Type.SLASH -> {
+    suspend fun handleCommand(event: GenericCommandInteractionEvent) {
+        val guild = event.guild!!
+        val guildId = guild.idLong
+        val command = getGenericCommand(guildId, event.name, event.commandType.id)?: return
+        val member = event.member!!
+
+        val missingUserPerms = getMissingPermissions(member, event.guildChannel, command.requiredUserPermissions)
+
+        if (!missingUserPerms.isEmpty()) {
+            val singular = missingUserPerms.size == 1
+            val parsed = missingUserPerms.stream().map { "`${it}`" }.collect(Collectors.joining(", "))
+            event.reply(":x: You are missing the following ${if (singular) "permission" else "permissions"}:\n$parsed").await()
+            log.debug("Refusing execution of command ${command.commandData.name} (Type=${command.type}, Guild=${guild.idLong}, User=${member.idLong}, Channel=${event.guildChannel.idLong}): User Missing permissions $missingUserPerms")
+            return
+        }
+
+        val missingBotPerms = getMissingPermissions(guild.selfMember, event.guildChannel, command.requiredBotPermissions)
+
+        if (!missingBotPerms.isEmpty()) {
+            val singular = missingBotPerms.size == 1
+            val parsed = missingBotPerms.stream().map { "`${it}`" }.collect(Collectors.joining(", "))
+            event.reply(":x: I am missing the following ${if (singular) "permission" else "permissions"}:\n$parsed").await()
+            log.debug("Refusing execution of command ${command.commandData.name} (Type=${command.type}, Guild=${guild.idLong}, User=${member.idLong}, Channel=${event.guildChannel.idLong}): Bot Missing permissions $missingBotPerms")
+            return
+        }
+
+        when (command) {
+            is SlashCommand -> {
                 val slashEvent = event as SlashCommandInteractionEvent
-                val slashCommand = command as SlashCommand
-                slashCommand.execute(slashEvent)
+                command.execute(slashEvent)
             }
         }
     }
@@ -75,9 +117,7 @@ class InteractionHandler(application: Application) {
 
     private fun registerCommand(action: CommandListUpdateAction, command: GenericCommand) {
         val config = application.tunerConfig
-
         Checks.notNull(command, "Command")
-
         command.application = application
 
         if (command.isGlobal && !config.isDevMode) {
@@ -98,9 +138,12 @@ class InteractionHandler(application: Application) {
 
         enabledCommands.add(command)
 
-        guildCommands.put(guildId, enabledCommands)
+        guildCommands[guildId] = enabledCommands
     }
 
+    /**
+     * Called by the JDA GuildReadyEvent
+     */
     fun updateGuildCommands(guild: Guild) {
         val guildId = guild.idLong
 
@@ -108,11 +151,8 @@ class InteractionHandler(application: Application) {
             return
 
         val updateAction = guild.updateCommands()
-
         val commands = guildCommands[guildId]!!
-
         commands.forEach { updateAction.addCommands(it.commandData) }
-
         updateAction.queue {
             it.forEach {  command ->
                 log.debug("Registered command ${command.name} on guild $guildId")
@@ -136,13 +176,13 @@ class InteractionHandler(application: Application) {
         return Collections.unmodifiableMap(guildCommands)
     }
 
-    fun getGenericCommand(name: String, type: Int) : GenericCommand? {
+    private fun getGenericCommand(name: String, type: Int) : GenericCommand? {
         return globalCommands.stream()
             .filter { it.commandData.name.equals(name, true) && it.type.id == type}
             .findFirst().orElse(null)
     }
 
-    fun getGenericCommand(guildId: Long, name: String, type: Int) : GenericCommand? {
+    private fun getGenericCommand(guildId: Long, name: String, type: Int) : GenericCommand? {
         return guildCommands.getOrDefault(guildId, listOf())
             .stream()
             .filter { it.commandData.name.equals(name, true) && it.type.id == type }
