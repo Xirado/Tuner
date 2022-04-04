@@ -17,6 +17,7 @@
 package at.xirado.tuner.util
 
 import at.xirado.tuner.Application
+import at.xirado.tuner.interaction.autocomplete.BasicAutocompleteChoice
 import kotlinx.coroutines.suspendCancellableCoroutine
 import net.dv8tion.jda.api.utils.data.DataArray
 import net.dv8tion.jda.api.utils.data.DataObject
@@ -35,7 +36,7 @@ private var firstTry = true
 private var ready = false
 private var innertubeRequestBody: AtomicReference<DataObject>? = null
 
-suspend fun getYoutubeMusicSearchResults(application: Application, query: String) : List<String> {
+suspend fun getYoutubeMusicSearchResults(application: Application, query: String) : List<BasicAutocompleteChoice> {
     val tunerConfig = application.tunerConfig
     val httpClient = application.httpClient
     if (!firstTry && !ready)
@@ -89,11 +90,11 @@ suspend fun getYoutubeMusicSearchResults(application: Application, query: String
 
     val renderer = optContents.get().getObject(0).getObject("searchSuggestionsSectionRenderer")
     val contents = renderer.optArray("contents").orElseGet(DataArray::empty)
-    val results = mutableListOf<String>()
+    val results = mutableListOf<BasicAutocompleteChoice>()
     contents.stream(DataArray::getObject).forEach {
         val result = it.getObject("searchSuggestionRenderer").getObject("navigationEndpoint").getObject("searchEndpoint").getString("query")
         if (result.length <= 100)
-            results.add(result)
+            results.add(BasicAutocompleteChoice(result, result))
     }
     return results
 }

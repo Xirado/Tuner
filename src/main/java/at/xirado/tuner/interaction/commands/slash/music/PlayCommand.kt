@@ -18,8 +18,10 @@ package at.xirado.tuner.interaction.commands.slash.music
 
 import at.xirado.tuner.audio.util.AudioUtils
 import at.xirado.tuner.audio.util.TrackInfo
+import at.xirado.tuner.data.TunerUser
 import at.xirado.tuner.interaction.CommandFlag
 import at.xirado.tuner.interaction.SlashCommand
+import at.xirado.tuner.interaction.autocomplete.IAutocompleteChoice
 import at.xirado.tuner.util.Util
 import at.xirado.tuner.util.getYoutubeMusicSearchResults
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler
@@ -57,6 +59,7 @@ class PlayCommand : SlashCommand("play", "plays something") {
         val member = event.member!!
         val voiceState = member.voiceState!!
         val manager = event.guild!!.audioManager
+        val user = TunerUser(event.guild!!.idLong, event.user.idLong)
 
         if (manager.connectedChannel == null) {
             try {
@@ -82,6 +85,7 @@ class PlayCommand : SlashCommand("play", "plays something") {
                     result.userData = TrackInfo(event.user.idLong, null)
                     event.hook.sendMessageEmbeds(AudioUtils.getAddedToQueueMessageEmbed(player, result)).queue()
                     player.scheduler.queue(result)
+                    user.addSearchEntry("${result.info.title} - ${result.info.author}", result.info.uri, false)
                 }
                 is AudioPlaylist -> {
                     if (result.isSearchResult) {
@@ -89,10 +93,12 @@ class PlayCommand : SlashCommand("play", "plays something") {
                         single.userData = TrackInfo(event.user.idLong, null)
                         event.hook.sendMessageEmbeds(AudioUtils.getAddedToQueueMessageEmbed(player, single)).queue()
                         player.scheduler.queue(single)
+                        user.addSearchEntry(event.getOption<String>("query")!!, event.getOption<String>("query")!!, false)
                         return
                     }
                     result.tracks.forEach { it.userData = TrackInfo(event.user.idLong, query) }
                     event.hook.sendMessageEmbeds(AudioUtils.getAddedToQueueMessageEmbed(player, result)).await()
+                    user.addSearchEntry(result.name, query, true)
                     result.tracks.forEach { player.scheduler.queue(it) }
                 }
                 else -> event.hook.sendMessage("Sorry, I haven't found anything! :(").await()
@@ -105,13 +111,17 @@ class PlayCommand : SlashCommand("play", "plays something") {
     override suspend fun onAutoComplete(event: CommandAutoCompleteInteractionEvent) {
         when (event.focusedOption.name) {
             "query" -> {
+                val user = TunerUser(event.guild!!.idLong, event.user.idLong)
                 val value = event.focusedOption.value
-                if (value.isBlank())
-                    return kotlin.run { event.replyChoiceStrings().await() }
+                val results = mutableListOf<IAutocompleteChoice>()
+                if (value.isBlank()) {
+                    results.addAll(user.getSearchHistory(25))
+                    return kotlin.run { event.replyChoices(results.stream().map { it.toJDAChoice() }.toList()).await() }
+                }
+                results.addAll(user.getSearchHistory(event.focusedOption.value, 25))
+                getYoutubeMusicSearchResults(application, event.focusedOption.value).stream().limit((25-results.size).toLong()).forEach(results::add)
 
-                val results = getYoutubeMusicSearchResults(application, event.focusedOption.value)
-
-                event.replyChoiceStrings(results).await()
+                event.replyChoices(results.stream().map { it.toJDAChoice() }.toList()).await()
             }
         }
     }

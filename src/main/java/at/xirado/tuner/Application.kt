@@ -73,6 +73,7 @@ class Application {
 
         interactionHandler = InteractionHandler(this)
         audioManager = AudioManager(this)
+        Class.forName("at.xirado.tuner.data.Database")
     }
 }
 
