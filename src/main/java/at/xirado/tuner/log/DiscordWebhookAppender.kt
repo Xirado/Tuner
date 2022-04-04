@@ -26,6 +26,7 @@ import dev.minn.jda.ktx.await
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 class DiscordWebhookAppender : AppenderBase<ILoggingEvent>() {
 
@@ -40,9 +41,8 @@ class DiscordWebhookAppender : AppenderBase<ILoggingEvent>() {
 
         var client: WebhookClient? = null
         var ready = false
-        val webhookLock = ReentrantLock()
+        val lock = ReentrantLock()
         val pendingMessages = mutableListOf<String>()
-        val emptyLength = getWebhookMessageLength(listOf())
 
         fun init(application: Application) {
             if (application.tunerConfig.webhookClient == null) {
@@ -54,23 +54,18 @@ class DiscordWebhookAppender : AppenderBase<ILoggingEvent>() {
                 var state = 0
                 var waitingTime = 0L
                 while (true) {
-                    webhookLock.lock()
-                    val size = pendingMessages.size
-                    webhookLock.unlock()
+                    val size = lock.withLock { pendingMessages.size }
+
                     if (size > 0 && state != 1) {
                         state = 1
                         waitingTime = System.currentTimeMillis()
                     }
 
                     if (state == 1 && System.currentTimeMillis() > waitingTime + 3000) {
-                        webhookLock.lock()
-                        val pack = split(pendingMessages)
-
-                        pack.forEach {
-                            sendWebhook(it)
-                        }
+                        lock.lock()
+                        sendWebhook(pendingMessages)
                         pendingMessages.clear()
-                        webhookLock.unlock()
+                        lock.unlock()
                         state = 0
                     }
 
@@ -78,14 +73,13 @@ class DiscordWebhookAppender : AppenderBase<ILoggingEvent>() {
                 }
             }
         }
+
         fun formatted(event: ILoggingEvent) : String {
-            var formatted = event.formattedMessage
-            if (formatted.length > 1800)
-                formatted = "[!] Message too long"
+            val formatted = event.formattedMessage
 
             val level = event.level
 
-            var primary = when (level) {
+            val primary = when (level) {
                 Level.WARN -> YELLOW
                 Level.ERROR -> RED
                 Level.INFO -> BLUE
@@ -96,9 +90,7 @@ class DiscordWebhookAppender : AppenderBase<ILoggingEvent>() {
 
             if (event.throwableProxy != null) {
                 val proxy = event.throwableProxy
-                var result = ThrowableProxyUtil.asString(proxy)
-                if (result.length > 1500)
-                   result = "   Too long!\n"
+                val result = ThrowableProxyUtil.asString(proxy)
 
                 builder.append(result).append(RESET)
             }
@@ -106,48 +98,11 @@ class DiscordWebhookAppender : AppenderBase<ILoggingEvent>() {
         }
 
         private suspend fun sendWebhook(logs: List<String>) {
-            val builder = StringBuilder("```ansi\n")
+            val builder = StringBuilder()
 
             logs.forEach(builder::append)
 
-            builder.append("```")
-
-            client!!.send(builder.toString().trim()).await()
-        }
-
-        private fun getWebhookMessageLength(logs: List<String>) : Int {
-            val builder = StringBuilder("```ansi\n")
-            logs.forEach(builder::append)
-            builder.append("```")
-            return builder.length
-        }
-
-        private fun split(input: List<String>) : List<List<String>> {
-            val output = mutableListOf<List<String>>()
-            val current = mutableListOf<String>()
-
-            var currentSize = emptyLength
-            var index = 0
-            for (i in input.indices) {
-                if (currentSize + input[i].length <= 2000) {
-                    currentSize += input[i].length
-                    current.add(input[i])
-                    continue
-                }
-                val list = mutableListOf<String>()
-                list.addAll(current)
-                output.add(list)
-                current.clear()
-                current.add(input[i])
-                currentSize = input[i].length
-                index = i
-            }
-            val lastIter = mutableListOf<String>()
-            for (i in index until input.size) {
-                lastIter.add(input[i])
-            }
-            output.add(lastIter)
-            return output
+            client!!.send(builder.toString().toByteArray(), "log.ansi").await()
         }
     }
 
@@ -155,8 +110,8 @@ class DiscordWebhookAppender : AppenderBase<ILoggingEvent>() {
         if (!ready)
             return
 
-        webhookLock.lock()
+        lock.lock()
         pendingMessages.add(formatted(eventObject))
-        webhookLock.unlock()
+        lock.unlock()
     }
 }

@@ -20,6 +20,7 @@ package at.xirado.tuner
 import at.xirado.tuner.audio.AudioManager
 import at.xirado.tuner.config.ConfigLoader
 import at.xirado.tuner.config.TunerConfiguration
+import at.xirado.tuner.data.GuildManager
 import at.xirado.tuner.interaction.InteractionHandler
 import at.xirado.tuner.listener.InteractionListener
 import at.xirado.tuner.listener.ReadyListener
@@ -52,6 +53,7 @@ class Application {
     val interactionHandler: InteractionHandler
     val audioManager: AudioManager
     val httpClient = OkHttpClient()
+    val guildManager: GuildManager
 
     init {
         application = this
@@ -61,7 +63,6 @@ class Application {
             throw IllegalArgumentException("config.yml does not contain \"discord_token\" property!")
 
         val token = tunerConfig.discordToken
-
         shardManager = DefaultShardManagerBuilder.createDefault(token, GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_VOICE_STATES, GatewayIntent.GUILD_MESSAGES)
             .setBulkDeleteSplittingEnabled(false)
             .setGatewayEncoding(GatewayEncoding.ETF)
@@ -74,6 +75,7 @@ class Application {
         interactionHandler = InteractionHandler(this)
         audioManager = AudioManager(this)
         Class.forName("at.xirado.tuner.data.Database")
+        guildManager = GuildManager(this)
     }
 }
 

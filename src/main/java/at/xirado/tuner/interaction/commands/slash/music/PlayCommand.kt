@@ -65,7 +65,7 @@ class PlayCommand : SlashCommand("play", "plays something") {
             try {
                 manager.openAudioConnection(voiceState.channel)
             } catch (exception: PermissionException) {
-                event.hook.sendMessage("I do not have permission to join this channel!").await()
+                event.hook.sendMessage("I do not have permission to join this channel!").setEphemeral(true).await()
                 return
             }
         }
@@ -91,7 +91,7 @@ class PlayCommand : SlashCommand("play", "plays something") {
                     if (result.isSearchResult) {
                         val single = result.tracks[0]
                         single.userData = TrackInfo(event.user.idLong, null)
-                        event.hook.sendMessageEmbeds(AudioUtils.getAddedToQueueMessageEmbed(player, single)).queue()
+                        event.hook.sendMessageEmbeds(AudioUtils.getAddedToQueueMessageEmbed(player, single)).setEphemeral(true).queue()
                         player.scheduler.queue(single)
                         user.addSearchEntry(event.getOption<String>("query")!!, event.getOption<String>("query")!!, false)
                         return

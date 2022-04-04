@@ -35,10 +35,9 @@ class AvatarCommand : SlashCommand("avatar", "gets the avatar from a user") {
         val user = event.getOption<User>("user")?: event.user
         val embed = Embed {
             title = "${user.asTag}'s avatar"
-            image = user.avatarUrl
+            image = "${user.avatarUrl}?size=512"
             color = Color.magenta.rgb
         }
-
         event.replyEmbeds(embed).await()
     }
 }

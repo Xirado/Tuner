@@ -24,7 +24,6 @@ import net.dv8tion.jda.api.events.guild.voice.*
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.lang.Exception
 import kotlin.time.Duration.Companion.seconds
 
 class VoiceListener(val application: Application) : ListenerAdapter() {
