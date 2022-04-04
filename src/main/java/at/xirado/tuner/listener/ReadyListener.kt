@@ -14,23 +14,21 @@
  * limitations under the License.
  */
 
-package at.xirado.tuner.exception;
+package at.xirado.tuner.listener
 
-public class DatabaseException extends RuntimeException{
+import at.xirado.tuner.Application
+import net.dv8tion.jda.api.events.guild.GuildReadyEvent
+import net.dv8tion.jda.api.hooks.ListenerAdapter
 
-    public DatabaseException() {
-        super();
-    }
+class ReadyListener(val application: Application) : ListenerAdapter() {
 
-    public DatabaseException(String message) {
-        super(message);
-    }
+    private var ready = false
 
-    public DatabaseException(Throwable throwable) {
-        super(throwable);
-    }
-
-    public DatabaseException(String message, Throwable throwable) {
-        super(message, throwable);
+    override fun onGuildReady(event: GuildReadyEvent) {
+        if (!ready) {
+            application.interactionHandler.init()
+            ready = true
+        }
+        application.interactionHandler.updateGuildCommands(event.guild)
     }
 }

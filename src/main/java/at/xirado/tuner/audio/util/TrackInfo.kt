@@ -14,19 +14,6 @@
  * limitations under the License.
  */
 
-package at.xirado.tuner.util.autocomplete;
+package at.xirado.tuner.audio.util
 
-import net.dv8tion.jda.api.interactions.commands.Command;
-import org.jetbrains.annotations.NotNull;
-
-public interface IAutocompleteChoice {
-
-    @NotNull
-    String getName();
-
-    @NotNull
-    String getValue();
-
-    @NotNull
-    Command.Choice toJDAChoice();
-}
+data class TrackInfo(val requester: Long, val playlistUrl: String?)

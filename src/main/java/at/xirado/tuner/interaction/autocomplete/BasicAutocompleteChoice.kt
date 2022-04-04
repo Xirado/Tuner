@@ -14,22 +14,12 @@
  * limitations under the License.
  */
 
-package at.xirado.tuner.util;
+package at.xirado.tuner.interaction.autocomplete
 
-import java.net.URL;
+import net.dv8tion.jda.api.interactions.commands.Command
 
-public class Util {
-
-    public static void clearScreen() {
-        System.out.print("\033[2J\033[H"); // Clears the terminal
-    }
-
-    public static boolean isUrl(String url) {
-        try {
-            new URL(url);
-            return true;
-        } catch (Exception exception) {
-            return false;
-        }
+class BasicAutocompleteChoice(override val name: String, override val value: String) : IAutocompleteChoice {
+    override fun toJDAChoice(): Command.Choice {
+        return Command.Choice(name, value)
     }
 }

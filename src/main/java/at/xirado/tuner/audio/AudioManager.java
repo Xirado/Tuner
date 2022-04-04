@@ -43,17 +43,16 @@ public class AudioManager {
         this.playerManager = new DefaultAudioPlayerManager();
 
         // Register spotify source manager
-        if (application.getTunerConfiguration().getSpotifyClientId() != null && application.getTunerConfiguration().getSpotifyClientSecret() != null) {
+        if (application.getTunerConfig().getSpotifyClientId() != null && application.getTunerConfig().getSpotifyClientSecret() != null) {
             SpotifyConfig spotifyConfig = new SpotifyConfig();
-            spotifyConfig.setClientId(application.getTunerConfiguration().getSpotifyClientId());
-            spotifyConfig.setClientSecret(application.getTunerConfiguration().getSpotifyClientSecret());
+            spotifyConfig.setClientId(application.getTunerConfig().getSpotifyClientId());
+            spotifyConfig.setClientSecret(application.getTunerConfig().getSpotifyClientSecret());
             spotifyConfig.setCountryCode("US");
             playerManager.registerSourceManager(new SpotifySourceManager(null, spotifyConfig, this.playerManager));
             LOG.info("Registered SpotifySourceManager");
         } else {
             LOG.error("Could not register SpotifySourceManager! Missing credentials");
         }
-
 
         this.audioPlayers = new ConcurrentHashMap<>();
         AudioSourceManagers.registerRemoteSources(playerManager);
@@ -77,5 +76,9 @@ public class AudioManager {
 
     public AudioPlayerManager getPlayerManager() {
         return playerManager;
+    }
+
+    public void destroy(GuildPlayer player) {
+        audioPlayers.remove(player.getGuildId(), player);
     }
 }

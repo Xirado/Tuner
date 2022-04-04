@@ -110,6 +110,4 @@ public class AudioScheduler extends AudioEventAdapter {
     public long getGuildId() {
         return guildId;
     }
-
-
 }
