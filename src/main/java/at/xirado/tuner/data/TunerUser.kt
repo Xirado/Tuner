@@ -23,7 +23,7 @@ class TunerUser(val guildId: Long, val userId: Long) {
                 ps.setLong(1, userId)
                 ps.setLong(2, System.currentTimeMillis())
                 ps.setString(3, name)
-                ps.setString(4, name)
+                ps.setString(4, value)
                 ps.setBoolean(5, playlist)
                 ps.executeAsync()
             }

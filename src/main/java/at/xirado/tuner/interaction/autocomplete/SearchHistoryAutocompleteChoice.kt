@@ -26,10 +26,10 @@ class SearchHistoryAutocompleteChoice(override val name: String, override val va
     }
 
     override fun toJDAChoice(): Command.Choice {
-        return Command.Choice(getFormattedString(), value)
+        return Command.Choice(getFormattedName(), value)
     }
 
-    fun getFormattedString(): String {
+    fun getFormattedName(): String {
         var str = "$SEARCH_INDICATOR${if (playlist) PLAYLIST_INDICATOR else ""} $name"
         if (str.length > 100) {
             val replaceString = "..."
