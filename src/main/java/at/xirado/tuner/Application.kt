@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory
 class Application {
 
     companion object {
-        private val log = LoggerFactory.getLogger(Application::class.java) as Logger
+        val log = LoggerFactory.getLogger(Application::class.java) as Logger
         lateinit var application: Application
     }
 
@@ -83,6 +83,7 @@ fun main(args: Array<String>) {
     if ("--debug" in args)
         (LoggerFactory.getLogger("ROOT") as ch.qos.logback.classic.Logger).level = Level.DEBUG
 
+    Thread.setDefaultUncaughtExceptionHandler { _, e -> Application.log.error("An unhandled exception was encountered", e)}
     Thread.currentThread().name = "Tuner Main-Thread"
     Application()
 }

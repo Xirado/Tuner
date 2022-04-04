@@ -18,56 +18,140 @@ package at.xirado.tuner.listener
 
 import at.xirado.tuner.Application
 import at.xirado.tuner.util.await
+import dev.minn.jda.ktx.await
 import kotlinx.coroutines.launch
-import net.dv8tion.jda.api.events.guild.voice.GuildVoiceJoinEvent
-import net.dv8tion.jda.api.events.guild.voice.GuildVoiceLeaveEvent
+import net.dv8tion.jda.api.events.guild.voice.*
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.lang.Exception
 import kotlin.time.Duration.Companion.seconds
 
 class VoiceListener(val application: Application) : ListenerAdapter() {
 
     private val log = LoggerFactory.getLogger(VoiceListener::class.java) as Logger
 
-    override fun onGuildVoiceLeave(event: GuildVoiceLeaveEvent) {
-        val jda = event.jda
-        val guild = event.guild
-        val audioManager = application.audioManager
-
-        val botVc = guild.audioManager.connectedChannel ?: return
-
-        if (botVc != event.channelLeft)
+    /**
+     * For when a member gets moved or leaves the channel
+     */
+    override fun onGuildVoiceUpdate(event: GuildVoiceUpdateEvent) {
+        if (event.channelLeft == null)
             return
 
-        val channel = event.channelLeft
-
-        if (!audioManager.isGuildPlayerLoaded(guild.idLong))
+        if (event.member == event.guild.selfMember)
             return
 
-        val player = audioManager.getPlayer(guild)
+        val state = event.guild.selfMember.voiceState!!
 
-        val userSize = channel.members.size
+        if (state.channel == null)
+            return
 
-        if (userSize == 1 && player.player.playingTrack == null) {
-            guild.audioManager.closeAudioConnection()
-            player.destroy()
+        if (state.channel != event.channelLeft)
+            return
+
+        if (event.channelLeft!!.members.size > 1)
+            return
+
+        if (!application.audioManager.isGuildPlayerLoaded(event.guild.idLong))
+            return
+
+        val audioPlayer = application.audioManager.getPlayer(event.guild)
+        if (audioPlayer.player.playingTrack != null) {
+            audioPlayer.player.isPaused = true
+        } else {
+            audioPlayer.destroy()
+            event.guild.audioManager.closeAudioConnection()
             return
         }
-
-        player.player.isPaused = true
-
         application.coroutineScope.launch {
-
-            val joinEvent = jda.await<GuildVoiceJoinEvent>(30.seconds) { it.channelJoined == channel }
-
-            if (joinEvent == null) {
-                guild.audioManager.closeAudioConnection()
-                player.destroy()
-                log.info("Nobody joined the channel in time!")
+            val updateEvent = event.jda.await<GenericGuildVoiceUpdateEvent>(30.seconds) {
+                if (it.channelJoined == null)
+                    return@await false
+                if (it.channelJoined != event.channelLeft) {
+                    return@await false
+                }
+                return@await it.member != it.guild.selfMember
+            }
+            if (updateEvent != null) {
+                audioPlayer.player.isPaused = false
             } else {
-                player.player.isPaused = false
-                log.info("Someone joined! Unpausing!")
+                if (state.channel != null && state.channel!!.members.size > 1)
+                    return@launch
+                if (state.channel != null && state.channel == event.channelLeft) {
+                    audioPlayer.destroy()
+                    event.guild.audioManager.closeAudioConnection()
+                }
+            }
+        }
+    }
+
+    /**
+     * For when the bot gets moved to another channel
+     */
+    override fun onGuildVoiceMove(event: GuildVoiceMoveEvent) {
+        if (event.member != event.guild.selfMember)
+            return
+
+        if (!application.audioManager.isGuildPlayerLoaded(event.guild.idLong))
+            return
+
+        val audioPlayer = application.audioManager.getPlayer(event.guild)
+
+        audioPlayer.player.isPaused = false
+
+        if (event.channelJoined.members.size == 1) {
+            val voiceState = event.guild.selfMember.voiceState!!
+
+            if (audioPlayer.player.playingTrack != null) {
+                audioPlayer.player.isPaused = true
+            }
+            application.coroutineScope.launch {
+                val updateEvent = event.jda.await<GenericGuildVoiceUpdateEvent>(30.seconds) {
+                    if (it.channelJoined == null)
+                        return@await false
+                    if (it.channelJoined != event.channelJoined)
+                        return@await false
+
+                    return@await it.member != it.guild.selfMember
+                }
+                if (updateEvent != null) {
+                    audioPlayer.player.isPaused = false
+                } else {
+                    if (voiceState.channel != null && voiceState.channel!!.members.size > 1)
+                        return@launch
+                    if (voiceState.channel != null && voiceState.channel == event.channelJoined) {
+                        audioPlayer.destroy()
+                        event.guild.audioManager.closeAudioConnection()
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * For when the bot leaves the channel
+     */
+    override fun onGuildVoiceLeave(event: GuildVoiceLeaveEvent) {
+        if (event.member != event.guild.selfMember)
+            return
+
+        if (!application.audioManager.isGuildPlayerLoaded(event.guild.idLong))
+            return
+
+        val audioPlayer = application.audioManager.getPlayer(event.guild)
+
+        audioPlayer.destroy()
+    }
+
+    override fun onGuildVoiceJoin(event: GuildVoiceJoinEvent) {
+        if (event.member != event.guild.selfMember)
+            return
+
+        if (!event.guild.selfMember.voiceState!!.isGuildDeafened) {
+            application.coroutineScope.launch {
+                try {
+                    event.guild.deafen(event.guild.selfMember, true).await()
+                } catch (_: Exception) {}
             }
         }
     }
