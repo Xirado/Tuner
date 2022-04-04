@@ -17,11 +17,10 @@
 package at.xirado.tuner.interaction
 
 import at.xirado.tuner.Application
-import java.util.EnumSet
-import at.xirado.tuner.interaction.CommandFlag
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.interactions.commands.Command
 import net.dv8tion.jda.api.interactions.commands.build.CommandData
+import java.util.*
 
 interface GenericCommand {
     var application: Application

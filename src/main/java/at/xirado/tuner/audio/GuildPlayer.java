@@ -56,4 +56,10 @@ public class GuildPlayer {
     public AudioPlayerSendHandler getSendHandler() {
         return sendHandler;
     }
+
+    public void destroy() {
+        player.destroy();
+        scheduler.getQueue().clear();
+        application.getAudioManager().destroy(this);
+    }
 }

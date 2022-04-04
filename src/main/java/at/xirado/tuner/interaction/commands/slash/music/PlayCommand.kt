@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
-package at.xirado.tuner.interaction.commands.slash
+package at.xirado.tuner.interaction.commands.slash.music
 
+import at.xirado.tuner.audio.util.AudioUtils
+import at.xirado.tuner.audio.util.TrackInfo
 import at.xirado.tuner.interaction.CommandFlag
 import at.xirado.tuner.interaction.SlashCommand
+import at.xirado.tuner.util.Util
 import at.xirado.tuner.util.getYoutubeMusicSearchResults
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager
@@ -27,15 +30,14 @@ import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack
 import dev.minn.jda.ktx.await
 import dev.minn.jda.ktx.interactions.getOption
-import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.exceptions.PermissionException
 import net.dv8tion.jda.api.interactions.commands.Command
+import net.dv8tion.jda.api.interactions.commands.OptionType.STRING
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
-import net.dv8tion.jda.api.interactions.commands.OptionType.*
 
 class PlayCommand : SlashCommand("play", "plays something") {
 
@@ -71,26 +73,29 @@ class PlayCommand : SlashCommand("play", "plays something") {
         var query = event.getOption<String>("query")!!
         val prefix = event.getOption<String>("provider")?: "ytsearch:"
 
-        query = if (query.startsWith("http://") || query.startsWith("https://")) query else prefix+query
+        if (!Util.isUrl(query))
+            query = prefix+query
 
         try {
             when (val result = playerManager.loadItemAsync(player, query)) {
                 is AudioTrack -> {
+                    result.userData = TrackInfo(event.user.idLong, null)
+                    event.hook.sendMessageEmbeds(AudioUtils.getAddedToQueueMessageEmbed(player, result)).queue()
                     player.scheduler.queue(result)
-                    event.hook.sendMessage("Now playing ${result.info.title}").await()
                 }
                 is AudioPlaylist -> {
                     if (result.isSearchResult) {
                         val single = result.tracks[0]
+                        single.userData = TrackInfo(event.user.idLong, null)
+                        event.hook.sendMessageEmbeds(AudioUtils.getAddedToQueueMessageEmbed(player, single)).queue()
                         player.scheduler.queue(single)
-                        event.hook.sendMessage("Now playing ${single.info.title}").await()
                         return
                     }
+                    result.tracks.forEach { it.userData = TrackInfo(event.user.idLong, query) }
+                    event.hook.sendMessageEmbeds(AudioUtils.getAddedToQueueMessageEmbed(player, result)).await()
                     result.tracks.forEach { player.scheduler.queue(it) }
-
-                    event.hook.sendMessage("Now playing playlist ${result.name}").await()
                 }
-                else -> event.hook.sendMessage("I haven't found anything!").await()
+                else -> event.hook.sendMessage("Sorry, I haven't found anything! :(").await()
             }
         } catch (exception: FriendlyException) {
             event.hook.sendMessage(exception.message!!).await()

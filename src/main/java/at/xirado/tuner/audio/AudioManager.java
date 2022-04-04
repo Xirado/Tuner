@@ -77,4 +77,8 @@ public class AudioManager {
     public AudioPlayerManager getPlayerManager() {
         return playerManager;
     }
+
+    public void destroy(GuildPlayer player) {
+        audioPlayers.remove(player.getGuildId(), player);
+    }
 }

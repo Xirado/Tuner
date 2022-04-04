@@ -14,22 +14,6 @@
  * limitations under the License.
  */
 
-package at.xirado.tuner.util;
+package at.xirado.tuner.audio.util
 
-import java.net.URL;
-
-public class Util {
-
-    public static void clearScreen() {
-        System.out.print("\033[2J\033[H"); // Clears the terminal
-    }
-
-    public static boolean isUrl(String url) {
-        try {
-            new URL(url);
-            return true;
-        } catch (Exception exception) {
-            return false;
-        }
-    }
-}
+data class TrackInfo(val requester: Long, val playlistUrl: String?)

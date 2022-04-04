@@ -25,9 +25,7 @@ import club.minnced.discord.webhook.WebhookClient
 import dev.minn.jda.ktx.await
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.lang.StringBuilder
 import java.util.concurrent.locks.ReentrantLock
-import kotlin.properties.Delegates
 
 class DiscordWebhookAppender : AppenderBase<ILoggingEvent>() {
 

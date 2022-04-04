@@ -23,6 +23,7 @@ import at.xirado.tuner.config.TunerConfiguration
 import at.xirado.tuner.interaction.InteractionHandler
 import at.xirado.tuner.listener.InteractionListener
 import at.xirado.tuner.listener.ReadyListener
+import at.xirado.tuner.listener.VoiceListener
 import at.xirado.tuner.log.DiscordWebhookAppender
 import at.xirado.tuner.util.Util
 import ch.qos.logback.classic.Level
@@ -61,13 +62,13 @@ class Application {
 
         val token = tunerConfig.discordToken
 
-        shardManager = DefaultShardManagerBuilder.createDefault(token, GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_VOICE_STATES)
+        shardManager = DefaultShardManagerBuilder.createDefault(token, GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_VOICE_STATES, GatewayIntent.GUILD_MESSAGES)
             .setBulkDeleteSplittingEnabled(false)
             .setGatewayEncoding(GatewayEncoding.ETF)
             .setActivity(Activity.listening("music"))
             .disableCache(CacheFlag.EMOTE)
             .setAudioSendFactory(NativeAudioSendFactory())
-            .addEventListeners(InteractionListener(this), ReadyListener(this))
+            .addEventListeners(InteractionListener(this), ReadyListener(this), VoiceListener(this))
             .build()
 
         interactionHandler = InteractionHandler(this)

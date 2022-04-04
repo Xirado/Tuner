@@ -22,7 +22,7 @@ import dev.minn.jda.ktx.await
 import dev.minn.jda.ktx.interactions.getOption
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
-import net.dv8tion.jda.api.interactions.commands.OptionType.*
+import net.dv8tion.jda.api.interactions.commands.OptionType.USER
 import java.awt.Color
 
 class AvatarCommand : SlashCommand("avatar", "gets the avatar from a user") {

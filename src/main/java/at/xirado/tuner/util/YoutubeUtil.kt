@@ -17,7 +17,6 @@
 package at.xirado.tuner.util
 
 import at.xirado.tuner.Application
-import at.xirado.tuner.config.TunerConfiguration
 import kotlinx.coroutines.suspendCancellableCoroutine
 import net.dv8tion.jda.api.utils.data.DataArray
 import net.dv8tion.jda.api.utils.data.DataObject
