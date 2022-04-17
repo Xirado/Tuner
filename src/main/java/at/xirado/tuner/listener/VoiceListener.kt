@@ -63,14 +63,15 @@ class VoiceListener(val application: Application) : ListenerAdapter() {
             return
         }
         application.coroutineScope.launch {
+
             val updateEvent = event.jda.await<GenericGuildVoiceUpdateEvent>(30.seconds) {
                 if (it.channelJoined == null)
                     return@await false
-                if (it.channelJoined != event.channelLeft) {
+                if (it.channelJoined != event.channelLeft)
                     return@await false
-                }
                 return@await it.member != it.guild.selfMember
             }
+
             if (updateEvent != null) {
                 audioPlayer.player.isPaused = false
             } else {
