@@ -37,9 +37,11 @@ public class AudioManager {
     private final Application application;
     private final AudioPlayerManager playerManager;
     private final Map<Long, GuildPlayer> audioPlayers;
+    private final long userId;
 
-    public AudioManager(Application application) {
+    public AudioManager(Application application, long userId) {
         this.application = application;
+        this.userId = userId;
         this.playerManager = new DefaultAudioPlayerManager();
 
         // Register spotify source manager
@@ -64,7 +66,7 @@ public class AudioManager {
 
     public synchronized GuildPlayer getPlayer(Guild guild) {
         return audioPlayers.computeIfAbsent(guild.getIdLong(), id -> {
-            var player = new GuildPlayer(application, id, playerManager);
+            var player = new GuildPlayer(application, id, playerManager, userId);
             guild.getAudioManager().setSendingHandler(player.getSendHandler());
             return player;
         });

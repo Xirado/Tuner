@@ -51,10 +51,10 @@ class VoiceListener(val application: Application) : ListenerAdapter() {
         if (event.channelLeft!!.members.size > 1)
             return
 
-        if (!application.audioManager.isGuildPlayerLoaded(event.guild.idLong))
+        if (!application.audioManagers[event.jda.selfUser.idLong]!!.isGuildPlayerLoaded(event.guild.idLong))
             return
 
-        val audioPlayer = application.audioManager.getPlayer(event.guild)
+        val audioPlayer = application.audioManagers[event.jda.selfUser.idLong]!!.getPlayer(event.guild)
         if (audioPlayer.player.playingTrack != null) {
             audioPlayer.player.isPaused = true
         } else {
@@ -92,10 +92,10 @@ class VoiceListener(val application: Application) : ListenerAdapter() {
         if (event.member != event.guild.selfMember)
             return
 
-        if (!application.audioManager.isGuildPlayerLoaded(event.guild.idLong))
+        if (!application.audioManagers[event.jda.selfUser.idLong]!!.isGuildPlayerLoaded(event.guild.idLong))
             return
 
-        val audioPlayer = application.audioManager.getPlayer(event.guild)
+        val audioPlayer = application.audioManagers[event.jda.selfUser.idLong]!!.getPlayer(event.guild)
 
         audioPlayer.player.isPaused = false
 
@@ -135,10 +135,10 @@ class VoiceListener(val application: Application) : ListenerAdapter() {
         if (event.member != event.guild.selfMember)
             return
 
-        if (!application.audioManager.isGuildPlayerLoaded(event.guild.idLong))
+        if (!application.audioManagers[event.jda.selfUser.idLong]!!.isGuildPlayerLoaded(event.guild.idLong))
             return
 
-        val audioPlayer = application.audioManager.getPlayer(event.guild)
+        val audioPlayer = application.audioManagers[event.jda.selfUser.idLong]!!.getPlayer(event.guild)
 
         audioPlayer.destroy()
     }

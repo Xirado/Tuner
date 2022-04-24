@@ -26,13 +26,12 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter
 class InteractionListener(val application: Application) : ListenerAdapter() {
 
     override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
-        application.coroutineScope.launch {
-            if (!event.isFromGuild) {
-                event.reply("You can only execute this command from a guild!").await()
-                return@launch
-            }
-            application.interactionHandler.handleCommand(event)
+        if (!event.isFromGuild) { // This check should never fail since we don't register global commands
+            event.reply("You can only execute this command from a guild!").queue()
+            return
         }
+
+        application.interactionHandler.handleCommandInteraction(event)
     }
 
     override fun onCommandAutoCompleteInteraction(event: CommandAutoCompleteInteractionEvent) {
@@ -41,7 +40,6 @@ class InteractionListener(val application: Application) : ListenerAdapter() {
                 event.replyChoiceStrings().await()
                 return@launch
             }
-            application.interactionHandler.handleAutocomplete(event)
         }
     }
 }

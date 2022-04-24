@@ -22,8 +22,9 @@ import at.xirado.tuner.config.ConfigLoader
 import at.xirado.tuner.config.TunerConfiguration
 import at.xirado.tuner.data.GuildManager
 import at.xirado.tuner.interaction.InteractionHandler
+import at.xirado.tuner.interaction.MultiBotManager
 import at.xirado.tuner.listener.InteractionListener
-import at.xirado.tuner.listener.ReadyListener
+import at.xirado.tuner.listener.RegistrationListener
 import at.xirado.tuner.listener.VoiceListener
 import at.xirado.tuner.log.DiscordWebhookAppender
 import at.xirado.tuner.util.Util
@@ -31,14 +32,18 @@ import ch.qos.logback.classic.Level
 import com.sedmelluq.discord.lavaplayer.jdaudp.NativeAudioSendFactory
 import dev.minn.jda.ktx.getDefaultScope
 import net.dv8tion.jda.api.GatewayEncoding
+import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.entities.Activity
 import net.dv8tion.jda.api.requests.GatewayIntent
-import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder
-import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.api.utils.cache.CacheFlag
 import okhttp3.OkHttpClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.slf4j.MDC
+import java.nio.charset.StandardCharsets
+import java.util.Base64
+import java.util.concurrent.ConcurrentHashMap
 
 class Application {
 
@@ -49,31 +54,41 @@ class Application {
 
     val tunerConfig: TunerConfiguration
     val coroutineScope = getDefaultScope()
-    val shardManager: ShardManager
-    val interactionHandler: InteractionHandler
-    val audioManager: AudioManager
+    val bots = mutableMapOf<Long, JDA>()
+    val audioManagers = mutableMapOf<Long, AudioManager>()
     val httpClient = OkHttpClient()
     val guildManager: GuildManager
+    val multiBotManager = MultiBotManager(this)
+    val interactionHandler = InteractionHandler(this)
 
     init {
+        MDC.setContextMap(mapOf("hello" to "World"))
+        log.info("Hello")
         application = this
         tunerConfig = TunerConfiguration(ConfigLoader.loadFileAsYaml("config.yml", true))
         DiscordWebhookAppender.init(this)
-        if (tunerConfig.discordToken == null || tunerConfig.discordToken.isEmpty())
-            throw IllegalArgumentException("config.yml does not contain \"discord_token\" property!")
+        if (tunerConfig.discordTokens.isEmpty())
+            throw IllegalArgumentException("\"discord_tokens\" property does not exist or is empty!")
 
-        val token = tunerConfig.discordToken
-        shardManager = DefaultShardManagerBuilder.createDefault(token, GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_VOICE_STATES, GatewayIntent.GUILD_MESSAGES)
-            .setBulkDeleteSplittingEnabled(false)
-            .setGatewayEncoding(GatewayEncoding.ETF)
-            .setActivity(Activity.listening("music"))
-            .disableCache(CacheFlag.EMOTE)
-            .setAudioSendFactory(NativeAudioSendFactory())
-            .addEventListeners(InteractionListener(this), ReadyListener(this), VoiceListener(this))
-            .build()
+        val tokens = tunerConfig.discordTokens
 
-        interactionHandler = InteractionHandler(this)
-        audioManager = AudioManager(this)
+        tokens.forEachIndexed { index, token ->
+            val contextMap = ConcurrentHashMap<String, String>()
+            contextMap["jda.shard"] = "Shard $index"
+
+            val userId = getUserIdFromToken(token)
+            audioManagers[userId] = AudioManager(this, userId)
+            bots[userId] = JDABuilder.createDefault(token, GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_VOICE_STATES, GatewayIntent.GUILD_MESSAGES)
+                .setBulkDeleteSplittingEnabled(false)
+                .setGatewayEncoding(GatewayEncoding.ETF)
+                .setActivity(Activity.listening("music (Shard ${index+1})"))
+                .disableCache(CacheFlag.EMOTE)
+                .setContextMap(contextMap)
+                .setContextEnabled(true)
+                .setAudioSendFactory(NativeAudioSendFactory())
+                .addEventListeners(InteractionListener(this), RegistrationListener(this), VoiceListener(this))
+                .build()
+        }
         Class.forName("at.xirado.tuner.data.Database")
         guildManager = GuildManager(this)
     }
@@ -89,4 +104,9 @@ fun main(args: Array<String>) {
     Thread.setDefaultUncaughtExceptionHandler { _, e -> Application.log.error("An unhandled exception was encountered", e)}
     Thread.currentThread().name = "Tuner Main-Thread"
     Application()
+}
+
+private fun getUserIdFromToken(token: String): Long {
+    val userIdEncoded = token.split(".")[0]
+    return String(Base64.getDecoder().decode(userIdEncoded), StandardCharsets.UTF_8).toLong()
 }

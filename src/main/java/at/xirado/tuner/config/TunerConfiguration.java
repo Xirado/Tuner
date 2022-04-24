@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -37,7 +38,7 @@ public class TunerConfiguration {
 
     private final DataObject object;
 
-    private final String discordToken;
+    private final List<String> discordTokens;
     private final boolean devMode;
     private final Set<Long> devGuilds;
     private final WebhookClient webhookClient;
@@ -51,7 +52,9 @@ public class TunerConfiguration {
     public TunerConfiguration(DataObject object) {
         this.object = object;
 
-        this.discordToken = getString(object, "discord_token");
+        this.discordTokens = object.optArray("discord_tokens").orElseGet(DataArray::empty)
+                .stream(DataArray::getString)
+                .toList();
 
         this.devMode = object.getBoolean("dev_mode", false);
 
@@ -117,8 +120,8 @@ public class TunerConfiguration {
         return object;
     }
 
-    public String getDiscordToken() {
-        return discordToken;
+    public List<String> getDiscordTokens() {
+        return discordTokens;
     }
 
     public boolean isDevMode() {

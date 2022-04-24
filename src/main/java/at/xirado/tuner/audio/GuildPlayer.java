@@ -27,8 +27,10 @@ public class GuildPlayer {
     private final AudioScheduler scheduler;
     private final AudioPlayerSendHandler sendHandler;
     private final long guildId;
+    private final long userId;
 
-    public GuildPlayer(Application application, long guildId, AudioPlayerManager audioPlayerManager) {
+    public GuildPlayer(Application application, long guildId, AudioPlayerManager audioPlayerManager, long userId) {
+        this.userId = userId;
         this.application = application;
         this.guildId = guildId;
         this.player = audioPlayerManager.createPlayer();
@@ -60,6 +62,6 @@ public class GuildPlayer {
     public void destroy() {
         player.destroy();
         scheduler.getQueue().clear();
-        application.getAudioManager().destroy(this);
+        application.getAudioManagers().get(userId).destroy(this);
     }
 }

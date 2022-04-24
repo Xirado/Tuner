@@ -17,22 +17,19 @@
 package at.xirado.tuner.interaction
 
 import at.xirado.tuner.Application
-import dev.minn.jda.ktx.await
 import io.github.classgraph.ClassGraph
+import kotlinx.coroutines.launch
+import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.GuildChannel
 import net.dv8tion.jda.api.entities.Member
-import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.GenericCommandInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
-import net.dv8tion.jda.api.requests.restaction.CommandListUpdateAction
-import net.dv8tion.jda.internal.utils.Checks
+import net.dv8tion.jda.api.interactions.commands.Command
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.*
-import java.util.concurrent.ConcurrentHashMap
-import java.util.stream.Collectors
 
 class InteractionHandler(val application: Application) {
 
@@ -44,159 +41,67 @@ class InteractionHandler(val application: Application) {
         private const val commandsPackage = "at.xirado.tuner.interaction.commands"
     }
 
-    private val globalCommands: MutableList<GenericCommand> = Collections.synchronizedList(mutableListOf())
-    private val guildCommands: MutableMap<Long, MutableList<GenericCommand>> = ConcurrentHashMap()
+    private val registeredCommands = getCommandsOfClass(SlashCommand::class.java)
 
-    fun init() {
-        registerCommands()
-    }
-
-    suspend fun handleAutocomplete(event: CommandAutoCompleteInteractionEvent) {
-        val guild = event.guild!!
-        val guildId = guild.idLong
-        val command = getGenericCommand(guildId, event.name, event.commandType.id)?: return
-
-        when (command) {
-            is SlashCommand -> {
-                command.onAutoComplete(event)
-            }
-        }
-    }
-
-    suspend fun handleCommand(event: GenericCommandInteractionEvent) {
-        val guild = event.guild!!
-        val guildId = guild.idLong
-        val command = getGenericCommand(guildId, event.name, event.commandType.id)?: return
-        val member = event.member!!
-
-        val missingUserPerms = getMissingPermissions(member, event.guildChannel, command.requiredUserPermissions)
-
-        if (!missingUserPerms.isEmpty()) {
-            val singular = missingUserPerms.size == 1
-            val parsed = missingUserPerms.stream().map { "`${it}`" }.collect(Collectors.joining(", "))
-            event.reply(":x: You are missing the following ${if (singular) "permission" else "permissions"}:\n$parsed").await()
-            log.debug("Refusing execution of command ${command.commandData.name} (Type=${command.type}, Guild=${guild.idLong}, User=${member.idLong}, Channel=${event.guildChannel.idLong}): User Missing permissions $missingUserPerms")
-            return
-        }
-
-        val missingBotPerms = getMissingPermissions(guild.selfMember, event.guildChannel, command.requiredBotPermissions)
-
-        if (!missingBotPerms.isEmpty()) {
-            val singular = missingBotPerms.size == 1
-            val parsed = missingBotPerms.stream().map { "`${it}`" }.collect(Collectors.joining(", "))
-            event.reply(":x: I am missing the following ${if (singular) "permission" else "permissions"}:\n$parsed").await()
-            log.debug("Refusing execution of command ${command.commandData.name} (Type=${command.type}, Guild=${guild.idLong}, User=${member.idLong}, Channel=${event.guildChannel.idLong}): Bot Missing permissions $missingBotPerms")
-            return
-        }
-
-        if (CommandFlag.VOICE_CHANNEL_ONLY in command.commandFlags) {
-            val voiceState = member.voiceState!!
-            if (voiceState.channel == null) {
-                event.reply("You must be listening in a voice-channel to use this command!").await()
-                return
-            }
-        }
-
-        if (CommandFlag.SAME_VOICE_CHANNEL_ONLY in command.commandFlags) {
-            val userVoiceState = member.voiceState!!
-            val botVoiceState = guild.selfMember.voiceState!!
-            if (botVoiceState.channel != null) {
-                if (userVoiceState.channel != botVoiceState.channel) {
-                    event.reply("You must be listening in ${botVoiceState.channel!!.asMention} to use this command!").await()
-                    return
-                }
-            }
-        }
-
-        when (command) {
-            is SlashCommand -> {
-                val slashEvent = event as SlashCommandInteractionEvent
-                command.execute(slashEvent)
-            }
-        }
-    }
-
-    private fun registerCommands() {
-        val updateAction = application.shardManager.shards[0].updateCommands()
-
-        registerCommandsOfClass(SlashCommand::class.java, updateAction)
-
-        updateAction.queue()
-    }
-
-    private fun registerCommand(action: CommandListUpdateAction, command: GenericCommand) {
-        val config = application.tunerConfig
-        Checks.notNull(command, "Command")
-        command.application = application
-
-        if (command.isGlobal && !config.isDevMode) {
-            globalCommands.add(command)
-            action.addCommands(command.commandData)
-            return
-        }
-
-        val enabledGuilds = if (config.isDevMode) config.devGuilds else command.enabledGuilds
-        enabledGuilds.forEach { addGuildCommand(it, command) }
-    }
-
-    private fun addGuildCommand(guildId: Long, command: GenericCommand) {
-        val enabledCommands = if (guildCommands.containsKey(guildId)) guildCommands[guildId] else mutableListOf()
-
-        if (command in enabledCommands!!)
-            throw IllegalArgumentException("${command.type} ${command.commandData.name} has already been registered!")
-
-        enabledCommands.add(command)
-
-        guildCommands[guildId] = enabledCommands
-    }
-
-    /**
-     * Called by the JDA GuildReadyEvent
-     */
-    fun updateGuildCommands(guild: Guild) {
-        val guildId = guild.idLong
-
-        if (guildId !in guildCommands || guildCommands[guildId]!!.isEmpty())
-            return
-
-        val updateAction = guild.updateCommands()
-        val commands = guildCommands[guildId]!!
-        commands.forEach { updateAction.addCommands(it.commandData) }
-        updateAction.queue {
-            it.forEach {  command ->
-                log.debug("Registered command ${command.name} on guild $guildId")
-            }
-        }
-    }
-
-    private fun registerCommandsOfClass(clazz: Class<out GenericCommand>, action: CommandListUpdateAction) {
-        val scanResult = ClassGraph().acceptPackages(commandsPackage).enableClassInfo().scan()
-
-        scanResult.getSubclasses(clazz).loadClasses().forEach {
-            try {
-                registerCommand(action, it.getDeclaredConstructor().newInstance() as GenericCommand)
-                log.debug("Found interaction-command ${it.name}")
-            } catch (ignored: Exception) {}
-        }
-        scanResult.close()
-    }
-
-    fun getGuildCommands() : Map<Long, List<GenericCommand>> {
-        return Collections.unmodifiableMap(guildCommands)
-    }
-
-    private fun getGenericCommand(name: String, type: Int) : GenericCommand? {
-        return globalCommands.stream()
-            .filter { it.commandData.name.equals(name, true) && it.type.id == type}
+    private fun getCommand(name: String, type: Int, guildId: Long) : GenericCommand? {
+        return registeredCommands.stream()
+            .filter { it.commandData.name.equals(name, true) && ( it.isGlobal || it.enabledGuilds.contains(guildId)) && it.type == Command.Type.fromId(type) }
             .findFirst().orElse(null)
     }
 
-    private fun getGenericCommand(guildId: Long, name: String, type: Int) : GenericCommand? {
-        return guildCommands.getOrDefault(guildId, listOf())
-            .stream()
-            .filter { it.commandData.name.equals(name, true) && it.type.id == type }
-            .findFirst()
-            .orElse(getGenericCommand(name, type))
+    fun registerCommandsOnGuild(jda: JDA, guild: Guild) {
+
+        val commands = registeredCommands.filter { it.isGlobal || it.enabledGuilds.contains(guild.idLong) }.map { it.commandData }
+
+        guild.updateCommands().addCommands(commands).queue()
+    }
+
+    fun handleCommandInteraction(event: GenericCommandInteractionEvent) {
+        if (event.guild == null)
+            return
+
+        val guild = event.guild!!
+        val command = getCommand(event.name, event.commandType.id, guild.idLong)?: return
+
+        val missingUserPermissions = getMissingPermissions(event.member!!, event.guildChannel, command.requiredUserPermissions)
+        if (missingUserPermissions.isNotEmpty()) {
+            val missingPermsString = missingUserPermissions.joinToString(", ") { "**${it}**" }
+            if (missingUserPermissions.size == 1) {
+                event.reply(":x: You are missing the following permission: $missingPermsString").setEphemeral(true).queue()
+                return
+            }
+            event.reply(":x: You are missing the following permissions: $missingPermsString").setEphemeral(true).queue()
+            return
+        }
+
+        val missingBotPermissions = getMissingPermissions(guild.selfMember, event.guildChannel, command.requiredBotPermissions)
+        if (missingBotPermissions.isNotEmpty()) {
+            val missingPermsString = missingBotPermissions.joinToString(", ") { "**${it}**" }
+            if (missingBotPermissions.size == 1) {
+                event.reply(":x: I am missing the following permission: $missingPermsString").setEphemeral(true).queue()
+                return
+            }
+            event.reply(":x: I am missing the following permissions: $missingPermsString").setEphemeral(true).queue()
+            return
+        }
+
+        application.coroutineScope.launch {
+            when (command) {
+                is SlashCommand -> command.execute(event as SlashCommandInteractionEvent)
+            }
+        }
+    }
+
+    private fun getCommandsOfClass(clazz: Class<out GenericCommand>): List<GenericCommand> {
+        val list = mutableListOf<GenericCommand>()
+
+        ClassGraph().acceptPackages(commandsPackage).enableClassInfo().scan().use {
+            it.getSubclasses(clazz).loadClasses().forEach { runCatching { list.add(it.getDeclaredConstructor().newInstance() as GenericCommand) } }
+        }
+
+        list.forEach { it.application = application }
+
+        return list
     }
 
     private fun getMissingPermissions(member: Member, channel: GuildChannel, requiredPerms: EnumSet<Permission>) : EnumSet<Permission> {

@@ -32,6 +32,7 @@ import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack
 import dev.minn.jda.ktx.await
 import dev.minn.jda.ktx.interactions.getOption
+import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.exceptions.PermissionException
@@ -58,8 +59,32 @@ class PlayCommand : SlashCommand("play", "plays something") {
         event.deferReply().queue()
         val member = event.member!!
         val voiceState = member.voiceState!!
-        val manager = event.guild!!.audioManager
-        val user = TunerUser(event.guild!!.idLong, event.user.idLong)
+
+        if (voiceState.channel == null) {
+            event.hook.sendMessage(":x: You are not in a voice-channel!").setEphemeral(true).queue()
+            return
+        }
+
+        val channel = voiceState.channel!!
+
+        val connectedBots = application.multiBotManager.getConnectedBots(event.guild!!.idLong, channel.idLong)
+
+        val jda = if (connectedBots.isEmpty()) {
+            val availableBots = application.multiBotManager.getAvailableBots(event.guild!!.idLong)
+            if (availableBots.isEmpty()) {
+                event.hook.sendMessage(":x: Sorry, there is currently no bot available!").setEphemeral(true).queue()
+                return
+            }
+            availableBots[0]
+        } else {
+            connectedBots[0]
+        }
+
+        val guild = jda.getGuildById(event.guild!!.idLong)!!
+
+        val manager = guild.audioManager
+
+        val user = TunerUser(guild.idLong, event.user.idLong)
 
         if (manager.connectedChannel == null) {
             try {
@@ -69,10 +94,10 @@ class PlayCommand : SlashCommand("play", "plays something") {
                 return
             }
         }
-
-        val audioManager = application.audioManager
+        
+        val audioManager = application.audioManagers[jda.selfUser.idLong]!!
         val playerManager = audioManager.playerManager
-        val player = audioManager.getPlayer(event.guild)
+        val player = audioManager.getPlayer(guild)
         var query = event.getOption<String>("query")!!
         val prefix = event.getOption<String>("provider")?: "ytsearch:"
 

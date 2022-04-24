@@ -53,7 +53,11 @@ public class ConsoleAppenderLayout extends LayoutBase<ILoggingEvent> {
 
         stringBuilder.style(SECONDARY).append("[").style(priColor).append(formattedDate).style(SECONDARY).append("] [")
                 .style(priColor).append(event.getThreadName()).style(SECONDARY).append("] [").style(priColor).append(event.getLevel().levelStr.toUpperCase(Locale.ROOT))
-                .style(SECONDARY).append("]: ").style(priColor).append(event.getFormattedMessage());
+                .style(SECONDARY).append("]");
+
+        stringBuilder.append(": ");
+
+        stringBuilder.style(priColor).append(event.getFormattedMessage());
 
         if (event.getThrowableProxy() != null) {
             IThrowableProxy proxy = event.getThrowableProxy();

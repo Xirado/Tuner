@@ -31,10 +31,10 @@ class AudioUtils {
     companion object {
 
         fun getAddedToQueueMessageEmbed(player: GuildPlayer, item: AudioItem): MessageEmbed {
-            val isQueueNotEmpty = !player.scheduler.queue.isEmpty()
+            val isPlaying = player.player.playingTrack != null
 
             val embedDescription =
-                if (isQueueNotEmpty)
+                if (isPlaying)
                     "**Added to queue:** ${titleMarkdown(item)}"
                 else
                     "**Now playing** ${titleMarkdown(item)}"
