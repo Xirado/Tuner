@@ -20,6 +20,7 @@ import at.xirado.tuner.Application
 import at.xirado.tuner.util.await
 import dev.minn.jda.ktx.await
 import kotlinx.coroutines.launch
+import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.guild.voice.*
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import org.slf4j.Logger
@@ -149,9 +150,9 @@ class VoiceListener(val application: Application) : ListenerAdapter() {
 
         if (!event.guild.selfMember.voiceState!!.isGuildDeafened) {
             application.coroutineScope.launch {
-                try {
+                if (event.guild.selfMember.hasPermission(event.channelJoined, Permission.VOICE_DEAF_OTHERS)) {
                     event.guild.deafen(event.guild.selfMember, true).await()
-                } catch (_: Exception) {}
+                }
             }
         }
     }

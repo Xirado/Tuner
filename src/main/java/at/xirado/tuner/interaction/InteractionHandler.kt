@@ -24,7 +24,9 @@ import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.GuildChannel
 import net.dv8tion.jda.api.entities.Member
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.GenericCommandInteractionEvent
+import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.interactions.commands.Command
 import org.slf4j.Logger
@@ -41,7 +43,7 @@ class InteractionHandler(val application: Application) {
         private const val commandsPackage = "at.xirado.tuner.interaction.commands"
     }
 
-    private val registeredCommands = getCommandsOfClass(SlashCommand::class.java)
+    private val registeredCommands = getCommandsOfClass(SlashCommand::class.java) + getCommandsOfClass(MessageContextCommand::class.java)
 
     private fun getCommand(name: String, type: Int, guildId: Long) : GenericCommand? {
         return registeredCommands.stream()
@@ -52,8 +54,28 @@ class InteractionHandler(val application: Application) {
     fun registerCommandsOnGuild(jda: JDA, guild: Guild) {
 
         val commands = registeredCommands.filter { it.isGlobal || it.enabledGuilds.contains(guild.idLong) }.map { it.commandData }
-
         guild.updateCommands().addCommands(commands).queue()
+    }
+
+    fun handleAutocompleteInteraction(event: CommandAutoCompleteInteractionEvent) {
+        if (event.guild == null)
+            return
+
+        val guild = event.guild!!
+        val command = getCommand(event.name, event.commandType.id, guild.idLong)?: return
+
+        if (CommandFlag.DEV_ONLY in command.commandFlags && event.user.idLong !in application.tunerConfig.developers)
+            return
+
+        val missingUserPermissions = getMissingPermissions(event.member!!, event.guildChannel, command.requiredUserPermissions)
+        if (missingUserPermissions.isNotEmpty())
+            return
+
+        application.coroutineScope.launch {
+            when (command) {
+                is SlashCommand -> command.onAutoComplete(event)
+            }
+        }
     }
 
     fun handleCommandInteraction(event: GenericCommandInteractionEvent) {
@@ -62,6 +84,13 @@ class InteractionHandler(val application: Application) {
 
         val guild = event.guild!!
         val command = getCommand(event.name, event.commandType.id, guild.idLong)?: return
+
+        if (CommandFlag.DEV_ONLY in command.commandFlags) {
+            if (event.user.idLong !in application.tunerConfig.developers) {
+                event.reply(":x: Only a developer can do this!").setEphemeral(true).queue()
+                return
+            }
+        }
 
         val missingUserPermissions = getMissingPermissions(event.member!!, event.guildChannel, command.requiredUserPermissions)
         if (missingUserPermissions.isNotEmpty()) {
@@ -88,6 +117,7 @@ class InteractionHandler(val application: Application) {
         application.coroutineScope.launch {
             when (command) {
                 is SlashCommand -> command.execute(event as SlashCommandInteractionEvent)
+                is MessageContextCommand -> command.execute(event as MessageContextInteractionEvent)
             }
         }
     }

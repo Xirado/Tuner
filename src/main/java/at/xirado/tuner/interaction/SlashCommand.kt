@@ -17,6 +17,8 @@
 package at.xirado.tuner.interaction
 
 import at.xirado.tuner.Application
+import dev.minn.jda.ktx.interactions.Subcommand
+import dev.minn.jda.ktx.interactions.optionType
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
@@ -24,18 +26,24 @@ import net.dv8tion.jda.api.interactions.commands.Command
 import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
+import net.dv8tion.jda.api.interactions.commands.build.SubcommandData
 import net.dv8tion.jda.internal.utils.Checks
 import java.util.*
 
-abstract class SlashCommand(name: String, description: String) : GenericCommand {
+abstract class SlashCommand(name: String, description: String, devCommand: Boolean = false) : GenericCommand {
 
-    override lateinit var application: Application
+    final override lateinit var application: Application
 
-    override val commandData = Commands.slash(name, description)
-    override val requiredUserPermissions = EnumSet.noneOf(Permission::class.java)
-    override val requiredBotPermissions = EnumSet.noneOf(Permission::class.java)
-    override val enabledGuilds = HashSet<Long>()
-    override val commandFlags = EnumSet.noneOf(CommandFlag::class.java)
+    final override val commandData = Commands.slash(name, description)
+    final override val requiredUserPermissions = EnumSet.noneOf(Permission::class.java)
+    final override val requiredBotPermissions = EnumSet.noneOf(Permission::class.java)
+    final override val enabledGuilds = HashSet<Long>()
+    final override val commandFlags = EnumSet.noneOf(CommandFlag::class.java)
+
+    init {
+        if (devCommand)
+            enabledGuilds.addAll(application.tunerConfig.devGuilds)
+    }
 
     override val type: Command.Type
         get() = Command.Type.SLASH
@@ -43,50 +51,17 @@ abstract class SlashCommand(name: String, description: String) : GenericCommand 
     override val isGlobal: Boolean
         get() = enabledGuilds.isEmpty()
 
-    fun option(
-        type: OptionType,
-        name: String,
-        description: String,
-        required: Boolean = false,
-        autoComplete: Boolean = false,
-        vararg choices: Command.Choice
-    ) {
-        val optionData = OptionData(type, name, description, required, autoComplete)
-        choices.forEach { optionData.addChoices(it) }
-        commandData.addOptions(optionData)
+    inline fun <reified T> option(name: String, description: String, required: Boolean = false, autocomplete: Boolean = false, builder: OptionData.() -> Unit = {}) {
+        val type = optionType<T>()
+        if (type == OptionType.UNKNOWN)
+            throw IllegalArgumentException("Cannot resolve type " + T::class.java.simpleName + " to OptionType!")
+
+        commandData.addOptions(OptionData(type, name, description).setRequired(required).setAutoComplete(autocomplete).apply(builder))
     }
 
-    override fun addRequiredUserPermissions(permission: Permission, vararg permissions: Permission) {
-        Checks.notNull(permission, "Permission")
-        Checks.noneNull(permissions, "Permission")
-
-        requiredUserPermissions.add(permission)
-        requiredUserPermissions.addAll(permissions.asList())
-    }
-
-    override fun addRequiredBotPermissions(permission: Permission, vararg permissions: Permission) {
-        Checks.notNull(permission, "Permission")
-        Checks.noneNull(permissions, "Permission")
-
-        requiredBotPermissions.add(permission)
-        requiredBotPermissions.addAll(permissions.asList())
-    }
-
-    override fun setEnabledGuilds(guildId: Long, vararg guildIds: Long) {
-        enabledGuilds.clear()
-        enabledGuilds.add(guildId)
-        enabledGuilds.addAll(guildIds.toList())
-    }
-
-    override fun addCommandFlags(vararg commandFlags: CommandFlag) {
-        Checks.noneNull(commandFlags, "CommandFlags")
-
-        this.commandFlags.addAll(commandFlags.toList())
-    }
-
-    override fun hasCommandFlag(commandFlag: CommandFlag): Boolean {
-        return this.commandFlags.contains(commandFlag)
-    }
+    inline fun subcommand(name: String, description: String, builder: SubcommandData.() -> Unit = {}) = commandData.addSubcommands(
+        Subcommand(name, description, builder)
+    )
 
     abstract suspend fun execute(event: SlashCommandInteractionEvent)
 

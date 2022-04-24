@@ -22,13 +22,12 @@ import dev.minn.jda.ktx.await
 import dev.minn.jda.ktx.interactions.getOption
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
-import net.dv8tion.jda.api.interactions.commands.OptionType.USER
 import java.awt.Color
 
 class AvatarCommand : SlashCommand("avatar", "gets the avatar from a user") {
 
     init {
-        option(type = USER, name = "user", description = "the user to get the avatar from")
+        option<User>(name = "user", description = "the user to get the avatar from")
     }
 
     override suspend fun execute(event: SlashCommandInteractionEvent) {

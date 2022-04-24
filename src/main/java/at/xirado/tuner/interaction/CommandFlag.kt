@@ -13,11 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package at.xirado.tuner.interaction
 
-package at.xirado.tuner.interaction;
-
-public enum CommandFlag {
-
-    VOICE_CHANNEL_ONLY(),
-    SAME_VOICE_CHANNEL_ONLY()
+enum class CommandFlag {
+    DEV_ONLY,
+    VOICE_CHANNEL_ONLY,
 }

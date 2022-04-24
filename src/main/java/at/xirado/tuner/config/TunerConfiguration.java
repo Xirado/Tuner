@@ -41,6 +41,7 @@ public class TunerConfiguration {
     private final List<String> discordTokens;
     private final boolean devMode;
     private final Set<Long> devGuilds;
+    private final Set<Long> developers;
     private final WebhookClient webhookClient;
     private final String innertubeApiKey;
     private final String innertubeRequestBodyLocation;
@@ -59,6 +60,10 @@ public class TunerConfiguration {
         this.devMode = object.getBoolean("dev_mode", false);
 
         this.devGuilds = object.optArray("dev_guilds").orElseGet(DataArray::empty)
+                .stream(DataArray::getLong)
+                .collect(Collectors.toUnmodifiableSet());
+
+        this.developers = object.optArray("developers").orElseGet(DataArray::empty)
                 .stream(DataArray::getLong)
                 .collect(Collectors.toUnmodifiableSet());
 
@@ -130,6 +135,10 @@ public class TunerConfiguration {
 
     public Set<Long> getDevGuilds() {
         return devGuilds;
+    }
+
+    public Set<Long> getDevelopers() {
+        return developers;
     }
 
     public WebhookClient getWebhookClient() {

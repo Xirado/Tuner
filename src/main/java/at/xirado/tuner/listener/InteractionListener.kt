@@ -20,12 +20,13 @@ import at.xirado.tuner.Application
 import dev.minn.jda.ktx.await
 import kotlinx.coroutines.launch
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
+import net.dv8tion.jda.api.events.interaction.command.GenericCommandInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 
 class InteractionListener(val application: Application) : ListenerAdapter() {
 
-    override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
+    override fun onGenericCommandInteraction(event: GenericCommandInteractionEvent) {
         if (!event.isFromGuild) { // This check should never fail since we don't register global commands
             event.reply("You can only execute this command from a guild!").queue()
             return
@@ -35,11 +36,9 @@ class InteractionListener(val application: Application) : ListenerAdapter() {
     }
 
     override fun onCommandAutoCompleteInteraction(event: CommandAutoCompleteInteractionEvent) {
-        application.coroutineScope.launch {
-            if (!event.isFromGuild) {
-                event.replyChoiceStrings().await()
-                return@launch
-            }
-        }
+        if (!event.isFromGuild)
+            return
+
+        application.interactionHandler.handleAutocompleteInteraction(event)
     }
 }

@@ -37,6 +37,8 @@ class RegistrationListener(val application: Application) : ListenerAdapter() {
                 val commandBot = application.multiBotManager.getBotWithRegisteredCommands(event.guild.idLong)
                 if (commandBot == null) {
                     application.interactionHandler.registerCommandsOnGuild(event.jda, event.guild)
+                } else {
+                    application.interactionHandler.registerCommandsOnGuild(commandBot, commandBot.getGuildById(event.guild.idLong)!!)
                 }
             }
         }

@@ -19,7 +19,6 @@ package at.xirado.tuner.interaction.commands.slash.music
 import at.xirado.tuner.audio.util.AudioUtils
 import at.xirado.tuner.audio.util.TrackInfo
 import at.xirado.tuner.data.TunerUser
-import at.xirado.tuner.interaction.CommandFlag
 import at.xirado.tuner.interaction.SlashCommand
 import at.xirado.tuner.interaction.autocomplete.IAutocompleteChoice
 import at.xirado.tuner.util.Util
@@ -32,27 +31,28 @@ import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack
 import dev.minn.jda.ktx.await
 import dev.minn.jda.ktx.interactions.getOption
-import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.exceptions.PermissionException
 import net.dv8tion.jda.api.interactions.commands.Command
-import net.dv8tion.jda.api.interactions.commands.OptionType.STRING
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
+import at.xirado.tuner.interaction.CommandFlag.VOICE_CHANNEL_ONLY
 
 class PlayCommand : SlashCommand("play", "plays something") {
 
     init {
-        option(type = STRING, name = "query", description = "what to play", required = true, autoComplete = true)
-        option(type = STRING, name = "provider", description = "where to search", choices = arrayOf(
-            Command.Choice("Youtube (Default)", "ytsearch:"),
-            Command.Choice("Spotify", "spsearch:"),
-            Command.Choice("Soundcloud", "scsearch:")
-        ))
+        option<String>(name = "query", description = "what to play", required = true, autocomplete = true)
+        option<String>(name = "provider", description = "where to search") {
+            addChoices(
+                Command.Choice("Youtube (Default)", "ytsearch:"),
+                Command.Choice("Spotify", "spsearch:"),
+                Command.Choice("Soundcloud", "scsearch:")
+            )
+        }
 
-        addCommandFlags(CommandFlag.SAME_VOICE_CHANNEL_ONLY, CommandFlag.VOICE_CHANNEL_ONLY)
+        commandFlags.add(VOICE_CHANNEL_ONLY)
     }
 
     override suspend fun execute(event: SlashCommandInteractionEvent) {
@@ -94,7 +94,7 @@ class PlayCommand : SlashCommand("play", "plays something") {
                 return
             }
         }
-        
+
         val audioManager = application.audioManagers[jda.selfUser.idLong]!!
         val playerManager = audioManager.playerManager
         val player = audioManager.getPlayer(guild)
