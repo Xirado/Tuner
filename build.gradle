@@ -38,7 +38,6 @@ repositories {
     }
     mavenCentral()
     maven { url 'https://jitpack.io' }
-    jcenter()
 }
 
 dependencies {
@@ -50,12 +49,12 @@ dependencies {
     implementation 'org.jline:jline:3.21.0'
     implementation "club.minnced:discord-webhooks:0.7.5"
     implementation 'com.github.walkyst:lavaplayer-fork:1.3.97'
-    implementation 'com.sedmelluq:jda-nas:1.1.0'
+    implementation 'com.github.sedmelluq:jda-nas:c3adb66'
     implementation 'com.zaxxer:HikariCP:5.0.1'
     implementation 'org.xerial:sqlite-jdbc:3.36.0.3'
     implementation 'com.github.Topis-Lavalink-Plugins:Topis-Source-Managers:2.0.1'
     implementation 'net.jodah:expiringmap:0.5.10'
-    implementation("com.github.minndevelopment:jda-ktx:9f01b74")
+    implementation 'com.github.minndevelopment:jda-ktx:9f01b74'
 }
 
 compileKotlin {
