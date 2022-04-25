@@ -21,9 +21,12 @@ import at.xirado.tuner.interaction.autocomplete.BasicAutocompleteChoice
 import kotlinx.coroutines.suspendCancellableCoroutine
 import net.dv8tion.jda.api.utils.data.DataArray
 import net.dv8tion.jda.api.utils.data.DataObject
-import okhttp3.*
+import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
 import org.apache.http.client.utils.URIBuilder
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
