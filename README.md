@@ -24,12 +24,10 @@ Tuner can play spotify links! Just provide a spotify application client id and s
 
 ### Building
 
-<ol>
-  <li>Clone repository: `git clone https://github.com/Xirado/Tuner`</li>
-  <li>Go into working directory: `cd Tuner`</li>
-  <li>Compile: `./gradlew shadowJar` on Linux/MacOS or `.\gradlew shadowJar` on Windows</li>
-  <li>Go into output directory: `cd build/libs`</li>
-  <li>Run: `java -jar Tuner-VERSION-all.jar` (Replace VERSION with whatever version it has)</li>
-</ol>
+1. Clone repository: `git clone https://github.com/Xirado/Tuner`
+2. Go into working directory: `cd Tuner`
+3. Compile: `./gradlew shadowJar` on Linux/MacOS or `.\gradlew shadowJar` on Windows
+4. Go into output directory: `cd build/libs`
+5. Run: `java -jar Tuner-VERSION-all.jar` (Replace VERSION with whatever version it has)
 
  
