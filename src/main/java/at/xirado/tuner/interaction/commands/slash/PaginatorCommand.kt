@@ -1,19 +1,16 @@
 package at.xirado.tuner.interaction.commands.slash
 
+import at.xirado.tuner.Application
 import at.xirado.tuner.interaction.SlashCommand
 import dev.minn.jda.ktx.interactions.getOption
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import kotlin.time.Duration.Companion.minutes
-import at.xirado.tuner.interaction.CommandFlag.*
 import at.xirado.tuner.interaction.Paginator
 
-class PaginatorCommand : SlashCommand("paginator", "tests the button paginator") {
+class PaginatorCommand : SlashCommand("paginator", "tests the button paginator", devCommand = true) {
 
     init {
         option<Boolean>(name = "ephemeral", description = "Whether the response should be ephemeral")
-
-        enabledGuilds.add(815597207617142814)
-        commandFlags.add(DEV_ONLY)
     }
 
     override suspend fun execute(event: SlashCommandInteractionEvent) {

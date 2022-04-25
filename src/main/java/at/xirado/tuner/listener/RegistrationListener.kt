@@ -36,9 +36,9 @@ class RegistrationListener(val application: Application) : ListenerAdapter() {
             application.coroutineScope.launch {
                 val commandBot = application.multiBotManager.getBotWithRegisteredCommands(event.guild.idLong)
                 if (commandBot == null) {
-                    application.interactionHandler.registerCommandsOnGuild(event.jda, event.guild)
+                    application.interactionHandler.registerCommandsOnGuild(event.guild)
                 } else {
-                    application.interactionHandler.registerCommandsOnGuild(commandBot, commandBot.getGuildById(event.guild.idLong)!!)
+                    application.interactionHandler.registerCommandsOnGuild(commandBot.getGuildById(event.guild.idLong)!!)
                 }
             }
         }
@@ -47,7 +47,7 @@ class RegistrationListener(val application: Application) : ListenerAdapter() {
     override fun onGuildJoin(event: GuildJoinEvent) {
         val botCount = application.multiBotManager.getBotCount(event.guild.idLong)
         if (botCount == 1) {
-            application.interactionHandler.registerCommandsOnGuild(event.jda, event.guild)
+            application.interactionHandler.registerCommandsOnGuild(event.guild)
         }
     }
 
@@ -58,7 +58,7 @@ class RegistrationListener(val application: Application) : ListenerAdapter() {
             application.coroutineScope.launch {
                 val commandBot = application.multiBotManager.getBotWithRegisteredCommands(event.guild.idLong)
                 if (commandBot == null) {
-                    application.interactionHandler.registerCommandsOnGuild(bot, bot.getGuildById(event.guild.idLong)!!)
+                    application.interactionHandler.registerCommandsOnGuild(bot.getGuildById(event.guild.idLong)!!)
                 }
             }
         }

@@ -30,5 +30,5 @@ interface GenericCommand {
     val isGlobal: Boolean
     val enabledGuilds: Set<Long>
     val commandFlags: EnumSet<CommandFlag>
-    var application: Application
+    val application: Application
 }

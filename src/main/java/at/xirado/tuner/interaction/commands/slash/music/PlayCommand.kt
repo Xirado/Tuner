@@ -16,6 +16,7 @@
 
 package at.xirado.tuner.interaction.commands.slash.music
 
+import at.xirado.tuner.Application
 import at.xirado.tuner.audio.util.AudioUtils
 import at.xirado.tuner.audio.util.TrackInfo
 import at.xirado.tuner.data.TunerUser

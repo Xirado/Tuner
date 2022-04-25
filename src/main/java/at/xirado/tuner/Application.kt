@@ -17,6 +17,7 @@
 @file:JvmName("Main")
 package at.xirado.tuner
 
+import at.xirado.tuner.Application.Companion.application
 import at.xirado.tuner.audio.AudioManager
 import at.xirado.tuner.config.ConfigLoader
 import at.xirado.tuner.config.TunerConfiguration
@@ -58,14 +59,14 @@ class Application {
     val audioManagers = mutableMapOf<Long, AudioManager>()
     val httpClient = OkHttpClient()
     val guildManager: GuildManager
-    val multiBotManager = MultiBotManager(this)
-    val interactionHandler = InteractionHandler(this)
+    val multiBotManager: MultiBotManager
+    val interactionHandler: InteractionHandler
 
     init {
-        MDC.setContextMap(mapOf("hello" to "World"))
-        log.info("Hello")
         application = this
         tunerConfig = TunerConfiguration(ConfigLoader.loadFileAsYaml("config.yml", true))
+        multiBotManager = MultiBotManager(this)
+        interactionHandler = InteractionHandler(this)
         DiscordWebhookAppender.init(this)
         if (tunerConfig.discordTokens.isEmpty())
             throw IllegalArgumentException("\"discord_tokens\" property does not exist or is empty!")

@@ -31,21 +31,28 @@ import net.dv8tion.jda.api.interactions.commands.build.SubcommandData
 import net.dv8tion.jda.internal.utils.Checks
 import java.util.*
 
-abstract class MessageContextCommand(name: String) : GenericCommand {
+abstract class MessageContextCommand(name: String, devCommand: Boolean = false) : GenericCommand {
 
-    override lateinit var application: Application
-
-    override val commandData = Commands.message(name)
-    override val requiredUserPermissions = EnumSet.noneOf(Permission::class.java)
-    override val requiredBotPermissions = EnumSet.noneOf(Permission::class.java)
-    override val enabledGuilds = HashSet<Long>()
-    override val commandFlags = EnumSet.noneOf(CommandFlag::class.java)
+    final override val commandData = Commands.message(name)
+    final override val requiredUserPermissions = EnumSet.noneOf(Permission::class.java)
+    final override val requiredBotPermissions = EnumSet.noneOf(Permission::class.java)
+    final override val enabledGuilds = HashSet<Long>()
+    final override val commandFlags = EnumSet.noneOf(CommandFlag::class.java)
+    final override val application: Application
+        get() = Application.application
 
     override val type: Command.Type
         get() = Command.Type.MESSAGE
 
     override val isGlobal: Boolean
         get() = enabledGuilds.isEmpty()
+
+    init {
+        if (devCommand) {
+            enabledGuilds.addAll(application.tunerConfig.devGuilds)
+            commandFlags.add(CommandFlag.DEV_ONLY)
+        }
+    }
 
     abstract suspend fun execute(event: MessageContextInteractionEvent)
 }

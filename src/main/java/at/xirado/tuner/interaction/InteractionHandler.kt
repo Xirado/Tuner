@@ -51,7 +51,7 @@ class InteractionHandler(val application: Application) {
             .findFirst().orElse(null)
     }
 
-    fun registerCommandsOnGuild(jda: JDA, guild: Guild) {
+    fun registerCommandsOnGuild(guild: Guild) {
 
         val commands = registeredCommands.filter { it.isGlobal || it.enabledGuilds.contains(guild.idLong) }.map { it.commandData }
         guild.updateCommands().addCommands(commands).queue()
@@ -92,6 +92,14 @@ class InteractionHandler(val application: Application) {
             }
         }
 
+        if (CommandFlag.VOICE_CHANNEL_ONLY in command.commandFlags) {
+            val voiceState = event.member!!.voiceState!!
+            if (!voiceState.inAudioChannel()) {
+                event.reply(":x: You must be in a voice-channel to do this!").setEphemeral(true).queue()
+                return
+            }
+        }
+
         val missingUserPermissions = getMissingPermissions(event.member!!, event.guildChannel, command.requiredUserPermissions)
         if (missingUserPermissions.isNotEmpty()) {
             val missingPermsString = missingUserPermissions.joinToString(", ") { "**${it}**" }
@@ -125,11 +133,13 @@ class InteractionHandler(val application: Application) {
     private fun getCommandsOfClass(clazz: Class<out GenericCommand>): List<GenericCommand> {
         val list = mutableListOf<GenericCommand>()
 
-        ClassGraph().acceptPackages(commandsPackage).enableClassInfo().scan().use {
-            it.getSubclasses(clazz).loadClasses().forEach { runCatching { list.add(it.getDeclaredConstructor().newInstance() as GenericCommand) } }
+        ClassGraph().acceptPackages(commandsPackage).enableClassInfo().scan().use { sr ->
+            sr.getSubclasses(clazz).loadClasses().forEach { cmd ->
+                runCatching {
+                    list.add(cmd.getDeclaredConstructor().newInstance() as GenericCommand)
+                }.onFailure { log.error("An error occurred while registering a command!", it) }
+            }
         }
-
-        list.forEach { it.application = application }
 
         return list
     }

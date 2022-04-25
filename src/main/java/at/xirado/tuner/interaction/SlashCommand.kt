@@ -27,29 +27,30 @@ import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData
-import net.dv8tion.jda.internal.utils.Checks
 import java.util.*
 
 abstract class SlashCommand(name: String, description: String, devCommand: Boolean = false) : GenericCommand {
-
-    final override lateinit var application: Application
 
     final override val commandData = Commands.slash(name, description)
     final override val requiredUserPermissions = EnumSet.noneOf(Permission::class.java)
     final override val requiredBotPermissions = EnumSet.noneOf(Permission::class.java)
     final override val enabledGuilds = HashSet<Long>()
     final override val commandFlags = EnumSet.noneOf(CommandFlag::class.java)
-
-    init {
-        if (devCommand)
-            enabledGuilds.addAll(application.tunerConfig.devGuilds)
-    }
+    final override val application: Application
+        get() = Application.application
 
     override val type: Command.Type
         get() = Command.Type.SLASH
 
     override val isGlobal: Boolean
         get() = enabledGuilds.isEmpty()
+
+    init {
+        if (devCommand) {
+            enabledGuilds.addAll(application.tunerConfig.devGuilds)
+            commandFlags.add(CommandFlag.DEV_ONLY)
+        }
+    }
 
     inline fun <reified T> option(name: String, description: String, required: Boolean = false, autocomplete: Boolean = false, builder: OptionData.() -> Unit = {}) {
         val type = optionType<T>()

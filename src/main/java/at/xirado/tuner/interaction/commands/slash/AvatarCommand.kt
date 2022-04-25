@@ -16,6 +16,7 @@
 
 package at.xirado.tuner.interaction.commands.slash
 
+import at.xirado.tuner.Application
 import at.xirado.tuner.interaction.SlashCommand
 import dev.minn.jda.ktx.Embed
 import dev.minn.jda.ktx.await
