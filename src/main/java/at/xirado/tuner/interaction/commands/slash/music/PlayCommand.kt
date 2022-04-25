@@ -24,6 +24,7 @@ import at.xirado.tuner.interaction.SlashCommand
 import at.xirado.tuner.interaction.autocomplete.IAutocompleteChoice
 import at.xirado.tuner.util.Util
 import at.xirado.tuner.util.getYoutubeMusicSearchResults
+import at.xirado.tuner.util.sendErrorMessage
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException
@@ -61,7 +62,7 @@ class PlayCommand : SlashCommand("play", "plays something") {
         val voiceState = member.voiceState!!
 
         if (voiceState.channel == null) {
-            event.hook.sendMessage(":x: You are not in a voice-channel!").setEphemeral(true).queue()
+            event.hook.sendErrorMessage("You are not in a voice-channel!").setEphemeral(true).queue()
             return
         }
 
@@ -72,7 +73,7 @@ class PlayCommand : SlashCommand("play", "plays something") {
         val jda = if (connectedBots.isEmpty()) {
             val availableBots = application.multiBotManager.getAvailableBots(event.guild!!.idLong)
             if (availableBots.isEmpty()) {
-                event.hook.sendMessage(":x: Sorry, there is currently no bot available!").setEphemeral(true).queue()
+                event.hook.sendErrorMessage("Sorry, there is currently no bot available!").setEphemeral(true).queue()
                 return
             }
             availableBots[0]
@@ -90,7 +91,7 @@ class PlayCommand : SlashCommand("play", "plays something") {
             try {
                 manager.openAudioConnection(voiceState.channel)
             } catch (exception: PermissionException) {
-                event.hook.sendMessage("I do not have permission to join this channel!").setEphemeral(true).await()
+                event.hook.sendErrorMessage("I do not have permission to join this channel!").setEphemeral(true).await()
                 return
             }
         }
