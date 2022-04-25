@@ -22,6 +22,8 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import net.dv8tion.jda.api.utils.data.DataArray
 import net.dv8tion.jda.api.utils.data.DataObject
 import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.apache.http.client.utils.URIBuilder
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -70,7 +72,7 @@ suspend fun getYoutubeMusicSearchResults(application: Application, query: String
     val innertubeBody = innertubeRequestBody!!.get()
     innertubeBody.put("input", query)
 
-    val requestBody = RequestBody.create(MediaType.get("application/json"), innertubeBody.toString())
+    val requestBody = innertubeBody.toString().toRequestBody("application/json".toMediaType())
 
     val request = Request.Builder()
         .url(URL(uri.toString()))
@@ -81,7 +83,7 @@ suspend fun getYoutubeMusicSearchResults(application: Application, query: String
         .build()
 
     val response = httpClient.newCall(request).await()
-    val responseBody = DataObject.fromJson(response.body()!!.string())
+    val responseBody = DataObject.fromJson(response.body!!.string())
     response.close()
 
     val optContents = responseBody.optArray("contents")
