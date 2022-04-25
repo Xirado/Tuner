@@ -1,6 +1,5 @@
 package at.xirado.tuner.interaction.commands.message
 
-import at.xirado.tuner.Application
 import at.xirado.tuner.interaction.MessageContextCommand
 import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent
 

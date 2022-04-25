@@ -17,18 +17,10 @@
 package at.xirado.tuner.interaction
 
 import at.xirado.tuner.Application
-import dev.minn.jda.ktx.interactions.Subcommand
-import dev.minn.jda.ktx.interactions.optionType
 import net.dv8tion.jda.api.Permission
-import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent
-import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.interactions.commands.Command
-import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.Commands
-import net.dv8tion.jda.api.interactions.commands.build.OptionData
-import net.dv8tion.jda.api.interactions.commands.build.SubcommandData
-import net.dv8tion.jda.internal.utils.Checks
 import java.util.*
 
 abstract class MessageContextCommand(name: String, devCommand: Boolean = false) : GenericCommand {

@@ -17,11 +17,8 @@
 package at.xirado.tuner.listener
 
 import at.xirado.tuner.Application
-import dev.minn.jda.ktx.await
-import kotlinx.coroutines.launch
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.GenericCommandInteractionEvent
-import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 
 class InteractionListener(val application: Application) : ListenerAdapter() {

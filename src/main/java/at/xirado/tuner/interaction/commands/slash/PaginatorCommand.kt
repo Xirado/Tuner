@@ -1,11 +1,10 @@
 package at.xirado.tuner.interaction.commands.slash
 
-import at.xirado.tuner.Application
+import at.xirado.tuner.interaction.Paginator
 import at.xirado.tuner.interaction.SlashCommand
 import dev.minn.jda.ktx.interactions.getOption
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import kotlin.time.Duration.Companion.minutes
-import at.xirado.tuner.interaction.Paginator
 
 class PaginatorCommand : SlashCommand("paginator", "tests the button paginator", devCommand = true) {
 

@@ -19,7 +19,6 @@ package at.xirado.tuner.interaction
 import at.xirado.tuner.Application
 import io.github.classgraph.ClassGraph
 import kotlinx.coroutines.launch
-import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.GuildChannel

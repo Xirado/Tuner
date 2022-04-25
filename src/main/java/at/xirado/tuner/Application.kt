@@ -17,7 +17,6 @@
 @file:JvmName("Main")
 package at.xirado.tuner
 
-import at.xirado.tuner.Application.Companion.application
 import at.xirado.tuner.audio.AudioManager
 import at.xirado.tuner.config.ConfigLoader
 import at.xirado.tuner.config.TunerConfiguration
@@ -41,9 +40,8 @@ import net.dv8tion.jda.api.utils.cache.CacheFlag
 import okhttp3.OkHttpClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.slf4j.MDC
 import java.nio.charset.StandardCharsets
-import java.util.Base64
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
 class Application {

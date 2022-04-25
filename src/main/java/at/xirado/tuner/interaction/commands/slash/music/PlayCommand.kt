@@ -16,10 +16,10 @@
 
 package at.xirado.tuner.interaction.commands.slash.music
 
-import at.xirado.tuner.Application
 import at.xirado.tuner.audio.util.AudioUtils
 import at.xirado.tuner.audio.util.TrackInfo
 import at.xirado.tuner.data.TunerUser
+import at.xirado.tuner.interaction.CommandFlag.VOICE_CHANNEL_ONLY
 import at.xirado.tuner.interaction.SlashCommand
 import at.xirado.tuner.interaction.autocomplete.IAutocompleteChoice
 import at.xirado.tuner.util.Util
@@ -39,7 +39,6 @@ import net.dv8tion.jda.api.interactions.commands.Command
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
-import at.xirado.tuner.interaction.CommandFlag.VOICE_CHANNEL_ONLY
 
 class PlayCommand : SlashCommand("play", "plays something") {
 
