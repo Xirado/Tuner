@@ -1,4 +1,4 @@
-package at.xirado.tuner.interaction.commands.slash
+package at.xirado.tuner.interaction.commands.slash.dev
 
 import at.xirado.tuner.interaction.Paginator
 import at.xirado.tuner.interaction.SlashCommand

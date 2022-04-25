@@ -1,4 +1,4 @@
-package at.xirado.tuner.interaction.commands.message
+package at.xirado.tuner.interaction.commands.message.dev
 
 import at.xirado.tuner.interaction.MessageContextCommand
 import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent

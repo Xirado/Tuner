@@ -17,6 +17,7 @@
 package at.xirado.tuner.interaction
 
 import at.xirado.tuner.Application
+import at.xirado.tuner.util.replyError
 import io.github.classgraph.ClassGraph
 import kotlinx.coroutines.launch
 import net.dv8tion.jda.api.Permission
@@ -86,7 +87,7 @@ class InteractionHandler(val application: Application) {
 
         if (CommandFlag.DEV_ONLY in command.commandFlags) {
             if (event.user.idLong !in application.tunerConfig.developers) {
-                event.reply(":x: Only a developer can do this!").setEphemeral(true).queue()
+                event.replyError("Only a developer can do this!", true).queue()
                 return
             }
         }
@@ -94,7 +95,7 @@ class InteractionHandler(val application: Application) {
         if (CommandFlag.VOICE_CHANNEL_ONLY in command.commandFlags) {
             val voiceState = event.member!!.voiceState!!
             if (!voiceState.inAudioChannel()) {
-                event.reply(":x: You must be in a voice-channel to do this!").setEphemeral(true).queue()
+                event.replyError("You must be in a voice-channel to do this!", true).queue()
                 return
             }
         }
@@ -103,10 +104,10 @@ class InteractionHandler(val application: Application) {
         if (missingUserPermissions.isNotEmpty()) {
             val missingPermsString = missingUserPermissions.joinToString(", ") { "**${it}**" }
             if (missingUserPermissions.size == 1) {
-                event.reply(":x: You are missing the following permission: $missingPermsString").setEphemeral(true).queue()
+                event.replyError("You are missing the following permission: $missingPermsString", true).queue()
                 return
             }
-            event.reply(":x: You are missing the following permissions: $missingPermsString").setEphemeral(true).queue()
+            event.replyError("You are missing the following permissions: $missingPermsString", true).queue()
             return
         }
 
@@ -114,10 +115,10 @@ class InteractionHandler(val application: Application) {
         if (missingBotPermissions.isNotEmpty()) {
             val missingPermsString = missingBotPermissions.joinToString(", ") { "**${it}**" }
             if (missingBotPermissions.size == 1) {
-                event.reply(":x: I am missing the following permission: $missingPermsString").setEphemeral(true).queue()
+                event.replyError("I am missing the following permission: $missingPermsString", true).queue()
                 return
             }
-            event.reply(":x: I am missing the following permissions: $missingPermsString").setEphemeral(true).queue()
+            event.replyError("I am missing the following permissions: $missingPermsString", true).queue()
             return
         }
 
