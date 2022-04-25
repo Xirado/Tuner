@@ -39,14 +39,10 @@ public class TunerConfiguration {
     private final DataObject object;
 
     private final List<String> discordTokens;
-    private final boolean devMode;
     private final Set<Long> devGuilds;
     private final Set<Long> developers;
     private final WebhookClient webhookClient;
-    private final String innertubeApiKey;
-    private final String innertubeRequestBodyLocation;
 
-    private String innertubeRequestBody;
     private String spotifyClientId;
     private String spotifyClientSecret;
 
@@ -57,8 +53,6 @@ public class TunerConfiguration {
                 .stream(DataArray::getString)
                 .toList();
 
-        this.devMode = object.getBoolean("dev_mode", false);
-
         this.devGuilds = object.optArray("dev_guilds").orElseGet(DataArray::empty)
                 .stream(DataArray::getLong)
                 .collect(Collectors.toUnmodifiableSet());
@@ -67,32 +61,9 @@ public class TunerConfiguration {
                 .stream(DataArray::getLong)
                 .collect(Collectors.toUnmodifiableSet());
 
-        if (this.devMode && this.devGuilds.isEmpty()) {
-            LOG.warn("Dev mode enabled but no development guilds specified in config. You will not see any commands!");
-        }
-
         this.webhookClient = object.isNull("webhook_url") || object.getString("webhook_url").isEmpty() ? null : new WebhookClientBuilder(object.getString("webhook_url")).build();
 
         var ytConfig = object.optObject("youtube").orElseGet(DataObject::empty);
-
-        this.innertubeApiKey = getString(ytConfig, "innertube_api_key");
-
-        this.innertubeRequestBodyLocation = getString(ytConfig, "innertube_request_body_location");
-
-        if (this.innertubeRequestBodyLocation != null) {
-            File file = new File(this.innertubeRequestBodyLocation);
-
-            if (file.exists()) {
-                try {
-                    this.innertubeRequestBody = DataObject.fromJson(new FileInputStream(file)).toString();
-                } catch (FileNotFoundException ignored) {
-
-                } catch (ParsingException exception) {
-                    LOG.error("Could not parse Innertube request-body JSON!", exception);
-                }
-
-            }
-        }
 
         if (getString(ytConfig, "innertube_papisid") != null)
             YoutubeHttpContextFilter.setPAPISID(ytConfig.getString("innertube_papisid"));
@@ -129,10 +100,6 @@ public class TunerConfiguration {
         return discordTokens;
     }
 
-    public boolean isDevMode() {
-        return devMode;
-    }
-
     public Set<Long> getDevGuilds() {
         return devGuilds;
     }
@@ -143,18 +110,6 @@ public class TunerConfiguration {
 
     public WebhookClient getWebhookClient() {
         return webhookClient;
-    }
-
-    public String getInnertubeApiKey() {
-        return innertubeApiKey;
-    }
-
-    public String getInnertubeRequestBodyLocation() {
-        return innertubeRequestBodyLocation;
-    }
-
-    public String getInnertubeRequestBody() {
-        return innertubeRequestBody;
     }
 
     public String getSpotifyClientId() {

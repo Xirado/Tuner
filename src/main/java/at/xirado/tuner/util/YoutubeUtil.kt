@@ -28,51 +28,22 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import org.apache.http.client.utils.URIBuilder
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.net.URL
-import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-private val log = LoggerFactory.getLogger(Application::class.java) as Logger
-private var firstTry = true
-private var ready = false
-private var innertubeRequestBody: AtomicReference<DataObject>? = null
+private var innertubeRequestBody = "{\"context\":{\"client\":{\"deviceMake\":\"\",\"deviceModel\":\"\",\"userAgent\":\"Mozilla/5.0\",\"clientName\":\"WEB_REMIX\",\"clientVersion\":\"1.20220330.01.00\",\"osName\":\"Windows\",\"osVersion\":\"10.0\",\"originalUrl\":\"https://music.youtube.com/\"}}}"
 
 suspend fun getYoutubeMusicSearchResults(application: Application, query: String) : List<BasicAutocompleteChoice> {
-    val tunerConfig = application.tunerConfig
     val httpClient = application.httpClient
-    if (!firstTry && !ready)
-        return listOf()
-
-    if (firstTry) {
-        firstTry = false
-        if (tunerConfig.innertubeRequestBody == null || tunerConfig.innertubeApiKey == null) {
-            if (tunerConfig.innertubeApiKey == null)
-                log.warn("Failed to fetch Youtube Music search results! Missing \"youtube.innertube_api_key\" config property!")
-
-            if (tunerConfig.innertubeRequestBody == null) {
-                  if (tunerConfig.innertubeRequestBodyLocation != null)
-                      log.warn("Failed to fetch Youtube Music search results! File ${tunerConfig.innertubeRequestBodyLocation} does not exist!")
-                  else
-                      log.warn("Failed to fetch Youtube Music search results! Missing \"youtube.innertube_request_body_location\" property!")
-            }
-            return listOf()
-        }
-        innertubeRequestBody = AtomicReference(DataObject.fromJson(tunerConfig.innertubeRequestBody))
-        ready = true
-    }
-    val innertubeApiKey = tunerConfig.innertubeApiKey
 
     val uri = URIBuilder()
     uri.scheme = "https"
     uri.host = "music.youtube.com"
     uri.path = "/youtubei/v1/music/get_search_suggestions"
-    uri.addParameter("key", innertubeApiKey)
 
-    val innertubeBody = innertubeRequestBody!!.get()
+    val innertubeBody = DataObject.fromJson(innertubeRequestBody)
     innertubeBody.put("input", query)
 
     val requestBody = innertubeBody.toString().toRequestBody("application/json".toMediaType())
@@ -80,9 +51,10 @@ suspend fun getYoutubeMusicSearchResults(application: Application, query: String
     val request = Request.Builder()
         .url(URL(uri.toString()))
         .post(requestBody)
-        .addHeader("referer", "https://music.youtube.com/")
-        .addHeader("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36")
-        .addHeader("content-type", "application/json")
+        .addHeader("Referer", "https://music.youtube.com/")
+        .addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36")
+        .addHeader("Content-Type", "application/json")
+        .addHeader("Host", "music.youtube.com")
         .build()
 
     val response = httpClient.newCall(request).await()

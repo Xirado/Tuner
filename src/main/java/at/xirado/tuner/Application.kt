@@ -40,9 +40,11 @@ import net.dv8tion.jda.api.utils.cache.CacheFlag
 import okhttp3.OkHttpClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.io.File
 import java.nio.charset.StandardCharsets
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.system.exitProcess
 
 class Application {
 
@@ -62,7 +64,12 @@ class Application {
 
     init {
         application = this
+        val configExists = File("config.yml").exists()
         tunerConfig = TunerConfiguration(ConfigLoader.loadFileAsYaml("config.yml", true))
+        if (!configExists) {
+            log.info("config.yml has been created! Shutting down...")
+            exitProcess(0)
+        }
         multiBotManager = MultiBotManager(this)
         interactionHandler = InteractionHandler(this)
         DiscordWebhookAppender.init(this)
