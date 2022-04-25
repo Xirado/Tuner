@@ -14,14 +14,6 @@
 # limitations under the License.                                           #
 ############################################################################
 
-###################################################################
-# Note: Slash commands take upto an hour to update. If you're     #
-# testing stuff, enable "dev_mode" and add the id of your         #
-# testing guild in "dev_guilds"! Doing this will only register    #
-# each command in that guild, which will be instant. Discord only #
-# updates the global command cache every hour.                    #
-###################################################################
-
 # Tuner configuration
 
 discord_tokens: [] # Your Discord bot token(s) go here.
