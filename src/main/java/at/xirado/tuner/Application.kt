@@ -40,6 +40,7 @@ import net.dv8tion.jda.api.utils.cache.CacheFlag
 import okhttp3.OkHttpClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.slf4j.MDC
 import java.io.File
 import java.nio.charset.StandardCharsets
 import java.util.*
@@ -80,7 +81,7 @@ class Application {
 
         tokens.forEachIndexed { index, token ->
             val contextMap = ConcurrentHashMap<String, String>()
-            contextMap["jda.shard"] = "Shard $index"
+            contextMap["tuner.shard"] = "Shard $index"
 
             val userId = getUserIdFromToken(token)
             audioManagers[userId] = AudioManager(this, userId)
